@@ -35,6 +35,7 @@ class StatusBar(Static):
         "█▇▆▅▄▃▂▁▂▃▄▅▆▇",
     ]
     PULSE_FRAMES = ["●○○", "○●○", "○○●", "○●○"]
+    VALID_STATES = {"idle", "speaking", "listening"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -43,6 +44,8 @@ class StatusBar(Static):
         self.render_now()
 
     def set_state(self, state: str) -> None:
+        if state not in self.VALID_STATES:
+            raise ValueError(f"invalid status state: {state!r}")
         if state != self._state:
             self._state = state
             self._frame = 0
@@ -53,25 +56,29 @@ class StatusBar(Static):
         self.render_now()
 
     def render_now(self) -> None:
-        if self._state == "speaking":
-            wave = self.WAVE_FRAMES[self._frame % len(self.WAVE_FRAMES)]
-            self.update(
-                f"[bold green]◉[/] [green]guru is speaking[/]  "
-                f"[yellow]{wave}[/]   "
-                f"[dim]s · silence    r · replay[/]"
-            )
-        elif self._state == "listening":
-            pulse = self.PULSE_FRAMES[self._frame % len(self.PULSE_FRAMES)]
-            self.update(
-                f"[bold cyan]🎤[/] [cyan]now speak the mantra[/]  "
-                f"[yellow]{pulse}[/]   "
-                f"[dim]space when done[/]"
-            )
-        else:
-            self.update(
-                "[dim]○ idle[/]   "
-                "[dim]→ next   ← prev   r replay   s silence   q quit[/]"
-            )
+        self.update(status_message(self._state, self._frame))
+
+
+def status_message(state: str, frame: int) -> str:
+    """Pure helper for StatusBar rendering. Kept testable in isolation."""
+    if state == "speaking":
+        wave = StatusBar.WAVE_FRAMES[frame % len(StatusBar.WAVE_FRAMES)]
+        return (
+            f"[bold green]◉[/] [green]guru is speaking[/]  "
+            f"[yellow]{wave}[/]   "
+            f"[dim]s · silence    r · replay[/]"
+        )
+    if state == "listening":
+        pulse = StatusBar.PULSE_FRAMES[frame % len(StatusBar.PULSE_FRAMES)]
+        return (
+            f"[bold cyan]🎤[/] [cyan]now speak the mantra[/]  "
+            f"[yellow]{pulse}[/]   "
+            f"[dim]space when done[/]"
+        )
+    return (
+        "[dim]○ idle[/]   "
+        "[dim]→ next   ← prev   r replay   s silence   q quit[/]"
+    )
 
 
 class StepHeader(Static):
@@ -98,31 +105,39 @@ CREAM = "#F5E6C8"
 ASH = "#9E9E9E"
 
 
+def sanskrit_block(step: Step) -> str:
+    return (
+        f"[bold {GOLD}]संस्कृत · sanskrit[/]\n\n"
+        f"[bold {GOLD}]{step.name_sa}[/]\n\n"
+        f"[bold {SAFFRON}]मन्त्र · mantra[/]\n"
+        f"[{SAFFRON}]{step.mantra_text.strip()}[/]"
+    )
+
+
+def english_block(step: Step, coaching_line: str) -> str:
+    guru = (
+        f"[bold {TULSI}]◆ Guru[/]\n[{CREAM}]{coaching_line}[/]\n\n"
+        if coaching_line
+        else ""
+    )
+    return (
+        f"[bold {ASH}]english[/]\n\n"
+        f"{guru}"
+        f"[bold {GOLD}]{step.name_en}[/]\n\n"
+        f"[bold {ASH}]meaning[/]\n[{CREAM}]{step.translation}[/]\n\n"
+        f"[bold {TULSI}]posture[/]\n[{CREAM}]{step.posture}[/]\n\n"
+        f"[bold {KUMKUM}]action[/]\n[{KUMKUM}]{step.physical_action.strip()}[/]"
+    )
+
+
 class SanskritPanel(Static):
     def render_sa(self, step: Step) -> None:
-        self.update(
-            f"[bold {GOLD}]संस्कृत · sanskrit[/]\n\n"
-            f"[bold {GOLD}]{step.name_sa}[/]\n\n"
-            f"[bold {SAFFRON}]मन्त्र · mantra[/]\n"
-            f"[{SAFFRON}]{step.mantra_text.strip()}[/]"
-        )
+        self.update(sanskrit_block(step))
 
 
 class EnglishPanel(Static):
     def render_en(self, step: Step, coaching_line: str) -> None:
-        guru = (
-            f"[bold {TULSI}]◆ Guru[/]\n[{CREAM}]{coaching_line}[/]\n\n"
-            if coaching_line
-            else ""
-        )
-        self.update(
-            f"[bold {ASH}]english[/]\n\n"
-            f"{guru}"
-            f"[bold {GOLD}]{step.name_en}[/]\n\n"
-            f"[bold {ASH}]meaning[/]\n[{CREAM}]{step.translation}[/]\n\n"
-            f"[bold {TULSI}]posture[/]\n[{CREAM}]{step.posture}[/]\n\n"
-            f"[bold {KUMKUM}]action[/]\n[{KUMKUM}]{step.physical_action.strip()}[/]"
-        )
+        self.update(english_block(step, coaching_line))
 
 
 class SidebarView(Static):

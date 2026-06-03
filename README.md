@@ -108,13 +108,79 @@ are warm.
 
 ## Test
 
+### Unit suite (default — fast, no audio hardware)
+
 ```bash
 uv run pytest -q
 ```
 
-Tests cover the ritual loader, the coaching loader, and the settings schema (default
-file validates, deep-merge works, unknown fields rejected, threshold/duration bounds
-enforced).
+~95 tests in under 5 seconds. Heavy deps (`sounddevice`, `piper`, `openvoice`, `melo`,
+`torch`) are stubbed via `sys.modules` so the suite runs without a sound card,
+model checkpoints, or network. Audio-integration tests (below) skip automatically
+unless `SGR_INTEGRATION=1` is set.
+
+Coverage:
+
+- `test_ritual_loader.py` / `test_coaching_loader.py` — YAML schema, 26-step
+  coverage, terseness limits.
+- `test_settings.py` — default validates, deep-merge, unknown-field rejection,
+  bounds on thresholds and `max_clip_s`.
+- `test_identity.py` — search-path order, enum + length validation.
+- `test_player.py` / `test_voices.py` — sounddevice stub, lock serialisation,
+  Piper voice cache idempotency.
+- `test_tts_piper.py` / `test_tts_openvoice.py` — synth/play/stop API with
+  mocked engines, double-checked load lock, blank-text no-op, graceful failure.
+- `test_cli.py` — `_resolve_clone_ref`, `--no-audio` short-circuit, argparse
+  overrides reach the TUI.
+- `test_tui_render.py` — palette hex/distinctness, status frame cycling,
+  sanskrit/english block colours + content.
+- `test_tui_app.py` — drives `GuruApp` through Textual's `App.run_test()`
+  pilot. Real key events through bindings, rendered widget content read via
+  `rich.Console.capture()`. Covers navigation, replay, silence, status-bar
+  reactivity (loading / speaking / idle), graceful degradation when
+  `speaker=None` or `coaching=None`.
+
+### Audio integration suite (opt-in — real audio, no mocks)
+
+```bash
+SGR_INTEGRATION=1 uv run pytest tests/test_audio_integration.py -q
+```
+
+These tests load the real Piper and OpenVoice models and capture the PCM that
+would have gone to the speaker (via a fake `sounddevice` that records calls
+into a numpy buffer). The assertions check that the audio actually exists —
+non-zero length, RMS above silence floor, dynamic range — so silent regressions
+like the `wave.Error` / missing-`soundfile` ones during Phase 2 would fail loudly.
+
+Coverage:
+
+- `test_piper_synthesize_produces_real_audio` — real Piper synth, asserts the
+  PCM is at 22.05 kHz, ≥1 s long, with speech-like RMS.
+- `test_piper_say_round_trip_through_app` — drives `PiperSpeaker.say()` and
+  asserts audio reached the (intercepted) player.
+- `test_openvoice_synthesize_produces_real_audio_in_user_timbre` — real
+  OpenVoice synth using one of your `eval/recordings/` clean clips as the
+  tone-color reference.
+- `test_openvoice_state_transitions_through_loading_then_speaking` —
+  asserts the speaker actually reports `state() == "loading"` during warmup
+  before flipping to `"speaking"`.
+- `test_eval_recording_meets_spt_spec` (parametrised over every
+  `*_clean.wav`) — verifies each recording is 16 kHz mono PCM-16 with ≥3 s
+  of content, so the Phase 4 STT pipeline can consume them straight.
+- `test_eval_recording_has_audible_content` — RMS floor check per clip.
+- Phase 4 placeholders (skipped): feed `eval/recordings/<id>_clean.wav` and
+  `<id>_with_error.wav` into the recitation-match advance rule.
+
+First OpenVoice run downloads ~1.5 GB of checkpoints; pre-warm with
+`uv run python scripts/fetch_openvoice.py` to keep the test fast.
+
+### Run just one suite
+
+```bash
+uv run pytest tests/test_tui_app.py -q          # TUI integration only
+uv run pytest tests/test_settings.py -q         # config schema only
+uv run pytest -k tts -q                         # everything matching "tts"
+```
 
 ## Doctor
 

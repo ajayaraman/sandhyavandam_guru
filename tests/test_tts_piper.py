@@ -40,7 +40,7 @@ class _FakeSD:
     def stop(self) -> None:
         self.calls.append(("stop", None))
 
-    def play(self, pcm, sr) -> None:
+    def play(self, pcm, sr, **kwargs) -> None:
         self.calls.append(("play", (pcm, sr)))
 
     def wait(self) -> None:

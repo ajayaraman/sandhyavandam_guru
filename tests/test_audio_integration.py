@@ -56,7 +56,7 @@ class _PCMRecorder:
         self._waiting = False
 
     def stop(self) -> None: ...
-    def play(self, pcm, sr) -> None:
+    def play(self, pcm, sr, **kwargs) -> None:
         self.played.append((np.asarray(pcm).copy(), int(sr)))
 
     def wait(self) -> None:

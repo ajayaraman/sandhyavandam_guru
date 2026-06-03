@@ -18,8 +18,8 @@ class _FakeSD:
     def stop(self) -> None:
         self.calls.append(("stop", (), {}))
 
-    def play(self, pcm, sample_rate) -> None:
-        self.calls.append(("play", (pcm, sample_rate), {}))
+    def play(self, pcm, sample_rate, **kwargs) -> None:
+        self.calls.append(("play", (pcm, sample_rate), kwargs))
         self.last_play = (pcm, sample_rate)
 
     def wait(self) -> None:

@@ -60,9 +60,11 @@ class _PCMRecorder:
         self.played.append((np.asarray(pcm).copy(), int(sr)))
 
     def wait(self) -> None:
-        # Player.play(..., block=True) calls wait(); return immediately so the
-        # worker thread can finish quickly in tests.
-        return
+        # Player.play(..., block=True) calls wait(); mimic real playback duration
+        # (capped) so observers actually see the SPEAKING state window.
+        if self.played:
+            pcm, sr = self.played[-1]
+            time.sleep(min(2.0, len(pcm) / sr))
 
     def query_devices(self, *_a, **_kw) -> dict:
         return {"name": "fake-pcm-recorder"}
@@ -78,6 +80,23 @@ def pcm_recorder(monkeypatch):
     mod.query_devices = rec.query_devices  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "sounddevice", mod)
     return rec
+
+
+def _bar_text(bar) -> str:
+    """Read the StatusBar's rendered content, robust across Textual versions."""
+    from rich.console import Console
+
+    renderable = None
+    for attr in ("_renderable", "_content", "renderable"):
+        renderable = getattr(bar, attr, None)
+        if renderable is not None:
+            break
+    if renderable is None:
+        renderable = bar.render()
+    console = Console(force_terminal=False, no_color=True, color_system=None, width=200)
+    with console.capture() as cap:
+        console.print(renderable)
+    return cap.get()
 
 
 def _amplitude_stats(pcm: np.ndarray) -> dict:
@@ -237,6 +256,145 @@ def test_eval_recording_has_audible_content(wav: Path | None) -> None:
     pcm = np.frombuffer(raw, dtype=np.int16).astype(np.float32)
     rms = float(np.sqrt(np.mean(pcm**2)))
     assert rms > 200, f"{wav.name} looks silent (rms={rms:.1f})"
+
+
+# ---------- TUI ↔ real speaker (closes the silent-failure gap) ----------
+
+
+async def test_real_piper_flips_status_bar_to_speaking_inside_tui(pcm_recorder) -> None:
+    """Drive the live GuruApp with a real PiperSpeaker; observe SPEAKING in the bar.
+
+    This is the test that would have failed during the missing-soundfile / wave.Error
+    regressions: a real speaker worker that crashes never sets _speaking, so the bar
+    never reports SPEAKING — even if the FakeSpeaker test still passes.
+    """
+    from rich.console import Console
+
+    from sandhyavandanam_guru import tui
+    from sandhyavandanam_guru.coaching_loader import load_coaching
+    from sandhyavandanam_guru.ritual_loader import load_ritual
+
+    try:
+        from sandhyavandanam_guru.audio.tts_piper import PiperSpeaker
+    except ImportError:
+        pytest.skip("piper-tts not installed")
+
+    ritual = load_ritual(config.RITUAL_DIR / "pratah_rigveda.yaml")
+    coaching = load_coaching(config.RITUAL_DIR / "coaching_en.yaml")
+    speaker = PiperSpeaker("en_US-lessac-medium")
+
+    app = tui.GuruApp(ritual, coaching=coaching, speaker=speaker)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        # First-step coaching line was kicked off on mount; press r to retrigger
+        # in case the mount call already finished while we were warming.
+        await pilot.press("r")
+
+        bar = app.query_one("#status", tui.StatusBar)
+        seen_states: list[str] = []
+        import asyncio
+
+        deadline = asyncio.get_event_loop().time() + 20.0
+        saw_speaking = False
+        while asyncio.get_event_loop().time() < deadline:
+            text = _bar_text(bar)
+            seen_states.append(text.strip().split("\n")[0])
+            if "GURU IS SPEAKING" in text:
+                saw_speaking = True
+                break
+            await asyncio.sleep(0.1)
+
+        # Audio actually reached the player — proves the worker completed synth.
+        assert pcm_recorder.played, "real Piper produced no audio"
+        # Status bar reflected the speaking state at least once during playback.
+        assert saw_speaking, f"status bar never flipped to SPEAKING; last 5 = {seen_states[-5:]}"
+
+
+async def test_real_piper_returns_status_to_idle_after_playback(pcm_recorder) -> None:
+    """After say() completes, the bar must return to IDLE — no stuck SPEAKING."""
+    from rich.console import Console
+
+    from sandhyavandanam_guru import tui
+    from sandhyavandanam_guru.coaching_loader import load_coaching
+    from sandhyavandanam_guru.ritual_loader import load_ritual
+
+    try:
+        from sandhyavandanam_guru.audio.tts_piper import PiperSpeaker
+    except ImportError:
+        pytest.skip("piper-tts not installed")
+
+    ritual = load_ritual(config.RITUAL_DIR / "pratah_rigveda.yaml")
+    coaching = load_coaching(config.RITUAL_DIR / "coaching_en.yaml")
+    speaker = PiperSpeaker("en_US-lessac-medium")
+
+    app = tui.GuruApp(ritual, coaching=coaching, speaker=speaker)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("r")
+
+        import asyncio
+
+        # Wait for the worker to finish (state clears back to idle).
+        deadline = asyncio.get_event_loop().time() + 20.0
+        while asyncio.get_event_loop().time() < deadline:
+            if speaker.state() == "idle" and pcm_recorder.played:
+                break
+            await asyncio.sleep(0.1)
+        assert speaker.state() == "idle"
+
+        # One more tick so the bar redraws.
+        await asyncio.sleep(0.2)
+        bar = app.query_one("#status", tui.StatusBar)
+        text = _bar_text(bar)
+        assert "IDLE" in text, text
+
+
+async def test_real_openvoice_shows_warming_up_then_speaking(pcm_recorder) -> None:
+    """OpenVoice's slow first load is the case where WARMING UP must be visible."""
+    from rich.console import Console
+
+    from sandhyavandanam_guru import tui
+    from sandhyavandanam_guru.coaching_loader import load_coaching
+    from sandhyavandanam_guru.ritual_loader import load_ritual
+
+    try:
+        from sandhyavandanam_guru.audio.tts_openvoice import OpenVoiceSpeaker
+    except ImportError:
+        pytest.skip("openvoice/melo not installed")
+    ref = _default_ref_wav()
+    speaker = OpenVoiceSpeaker(ref_wav=ref, language="EN_INDIA")
+
+    ritual = load_ritual(config.RITUAL_DIR / "pratah_rigveda.yaml")
+    coaching = load_coaching(config.RITUAL_DIR / "coaching_en.yaml")
+    app = tui.GuruApp(ritual, coaching=coaching, speaker=speaker)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("r")
+
+        import asyncio
+
+        bar = app.query_one("#status", tui.StatusBar)
+        saw_loading = False
+        saw_speaking = False
+        deadline = asyncio.get_event_loop().time() + 240.0  # OV warmup can be slow
+        while asyncio.get_event_loop().time() < deadline:
+            console = Console(force_terminal=False, no_color=True, color_system=None, width=200)
+            renderable = getattr(bar, "_renderable", None) or getattr(bar, "_content", None)
+            with console.capture() as cap:
+                console.print(renderable)
+            text = cap.get()
+            if "WARMING UP" in text:
+                saw_loading = True
+            if "GURU IS SPEAKING" in text:
+                saw_speaking = True
+                break
+            await asyncio.sleep(0.2)
+        assert saw_loading, "status bar never showed WARMING UP — loading state not wired"
+        assert saw_speaking, "status bar never showed SPEAKING — synth never finished"
+        assert pcm_recorder.played
+
+
+# ---------- eval recordings as user input (Phase 4 scaffolding) ----------
 
 
 @pytest.mark.skip(reason="Phase 4: STT pipeline not wired yet")

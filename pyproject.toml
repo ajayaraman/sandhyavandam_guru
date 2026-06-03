@@ -30,7 +30,15 @@ clone = [
     "sounddevice>=0.4",
     "numpy>=1.26",
 ]
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.5"]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+    # numpy is imported at module level by several test files (test_player,
+    # test_tts_*, test_audio_integration) — must be installed for the unit
+    # suite to even collect, even though the production code defers it.
+    "numpy>=1.26",
+]
 
 [tool.uv]
 # OpenVoice upstream pins numpy==1.22 and librosa==0.9.1; these conflict with

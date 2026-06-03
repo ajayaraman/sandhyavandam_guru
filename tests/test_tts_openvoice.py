@@ -108,6 +108,17 @@ def test_say_blank_is_noop(tmp_path: Path) -> None:
 
 def test_say_logs_error_when_load_fails(tmp_path: Path, monkeypatch) -> None:
     """If model load raises, the worker swallows it and clears speaking flag."""
+    import sys
+    import types
+
+    # The say() worker calls player.stop() which imports sounddevice; stub it so
+    # this test runs even when --extra audio is not installed.
+    sd_mod = types.ModuleType("sounddevice")
+    sd_mod.stop = lambda: None  # type: ignore[attr-defined]
+    sd_mod.play = lambda *a, **kw: None  # type: ignore[attr-defined]
+    sd_mod.wait = lambda: None  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "sounddevice", sd_mod)
+
     from sandhyavandanam_guru.audio.tts_openvoice import OpenVoiceSpeaker
 
     s = OpenVoiceSpeaker(ref_wav=tmp_path / "ref.wav", language="EN_INDIA")

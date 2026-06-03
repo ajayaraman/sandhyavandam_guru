@@ -22,20 +22,46 @@ See `plan.md` for the full design (architecture, model stack, phased delivery).
 
 ## Install
 
-Requires [uv](https://docs.astral.sh/uv/) and macOS / Linux. From the project root:
+Requires [uv](https://docs.astral.sh/uv/) and macOS / Linux. Pick the tier you want:
+
+### Tier 1 — silent study aid + full unit tests (turn-key)
 
 ```bash
-uv sync --extra dev                              # Phase 1 study-aid TUI only
-uv sync --extra dev --extra audio                # + Piper guru voice
-uv sync --extra dev --extra audio --extra clone  # + OpenVoice timbre clone
+git clone https://github.com/ajayaraman/sandhyavandam_guru.git
+cd sandhyavandam_guru
+uv sync --extra dev
+uv run pytest -q          # 95 passed, 30 skipped in <5 s
+uv run sgr --no-audio     # the TUI, silent
 ```
 
-The clone extras pull MeloTTS, which needs MeCab installed at the system level:
+No system deps, no model downloads, no network. Tier 1 is enough to read along.
+
+### Tier 2 — Piper guru voice
 
 ```bash
-brew install mecab            # macOS
-# sudo apt install mecab libmecab-dev     # Debian/Ubuntu
+uv sync --extra dev --extra audio
+uv run sgr                # Piper synth, first launch downloads a ~60 MB voice
 ```
+
+### Tier 3 — OpenVoice timbre clone (your own voice as the guru)
+
+```bash
+brew install mecab        # macOS (Debian/Ubuntu: sudo apt install mecab libmecab-dev)
+uv sync --extra dev --extra audio --extra clone
+uv run python scripts/fetch_openvoice.py       # one-time ~1.5 GB download
+uv run sgr --voice openvoice
+```
+
+Tiers compose: `--extra dev --extra audio --extra clone` gives you everything.
+
+### Quick chooser
+
+| You want… | Run |
+|---|---|
+| Try the TUI now | `uv sync --extra dev && uv run sgr --no-audio` |
+| Hear a generic guru voice | Tier 2 |
+| Hear *your* voice as the guru | Tier 3 |
+| Run the full integration tests | Tier 3 + `SGR_INTEGRATION=1` |
 
 ## Configuration
 

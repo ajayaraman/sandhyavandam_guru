@@ -3570,6 +3570,7 @@ clone = [
     { name = "soundfile" },
 ]
 dev = [
+    { name = "numpy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
@@ -3601,6 +3602,7 @@ requires-dist = [
     { name = "myshell-openvoice", marker = "extra == 'clone'", git = "https://github.com/myshell-ai/OpenVoice.git" },
     { name = "numpy", marker = "extra == 'audio'", specifier = ">=1.26" },
     { name = "numpy", marker = "extra == 'clone'", specifier = ">=1.26" },
+    { name = "numpy", marker = "extra == 'dev'", specifier = ">=1.26" },
     { name = "numpy", marker = "extra == 'eval'", specifier = ">=1.26" },
     { name = "openai", marker = "extra == 'audio'", specifier = ">=1.40" },
     { name = "openai", marker = "extra == 'shootout'", specifier = ">=1.40" },

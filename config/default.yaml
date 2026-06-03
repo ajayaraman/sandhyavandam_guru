@@ -30,7 +30,11 @@ stt:
 #   backend = piper      : tiny generic voice, instant, no clone
 #   backend = openvoice  : OpenVoice v2 — clone your timbre over MeloTTS-EN-India
 tts:
-  backend: openvoice
+  # Default = piper because it's turn-key: tiny voice file auto-downloaded on
+  # first run, no system deps, no model warmup. Switch to "openvoice" once
+  # you've run `uv sync --extra clone`, `brew install mecab`, and
+  # `uv run python scripts/fetch_openvoice.py` (downloads ~1.5 GB once).
+  backend: piper
   piper:
     voice: en_US-lessac-medium
   openvoice:

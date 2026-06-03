@@ -7,10 +7,22 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Footer, Header, Static
 
+import logging as _logging
+
 from . import config as _cfg
 from .audio.chanter import Chanter
 from .coaching_loader import Coaching
+from .lesson import Substep, build_lesson
+from .mantra_text import parse_mantra
 from .ritual_loader import Ritual, Step
+
+_cfg.USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
+_tui_log = _logging.getLogger("sgr.tui")
+if not _tui_log.handlers:
+    _h = _logging.FileHandler(_cfg.USER_DATA_DIR / "tts.log")
+    _h.setFormatter(_logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
+    _tui_log.addHandler(_h)
+    _tui_log.setLevel(_logging.INFO)
 
 
 class Speaker(Protocol):
@@ -206,8 +218,12 @@ class GuruApp(App):
             _cfg.PROJECT_ROOT / "assets" / "mantras"
         )
         self.index = 0
-        self._pending_chant: str | None = None
+        from collections import deque
+        self._queue: deque[Substep] = deque()
         self._prev_speaker_state = "idle"
+        self._prev_chanter_busy = False
+        # Per-line action announcements — configurable later via settings.
+        self.announce_per_line_actions = True
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
@@ -224,6 +240,8 @@ class GuruApp(App):
     def on_mount(self) -> None:
         self.title = "Sandhyavandanam Guru"
         self.sub_title = f"{self.ritual.sandhya_kind} sandhya"
+        if self.speaker is not None and hasattr(self.speaker, "prime"):
+            self.speaker.prime(self.coaching)  # type: ignore[attr-defined]
         self._refresh(speak=True)
         # 8 Hz status refresh — fast enough for a fluid waveform, cheap enough
         # for the terminal (one Static update per tick).
@@ -238,23 +256,38 @@ class GuruApp(App):
             elif self.speaker.is_speaking():
                 speaker_state = "speaking"
 
-        # If speaker just finished and a mantra is queued for this step, chant it.
-        if (
-            self._prev_speaker_state in ("speaking", "loading")
-            and speaker_state == "idle"
-            and self._pending_chant is not None
-        ):
-            mid = self._pending_chant
-            self._pending_chant = None
-            self.chanter.chant(mid)
+        chanter_busy = self.chanter.is_chanting()
+        both_idle = speaker_state == "idle" and not chanter_busy
+        was_active = (
+            self._prev_speaker_state in ("speaking", "loading") or self._prev_chanter_busy
+        )
+        # Dispatch the next substep when both speaker and chanter go idle
+        # (either just transitioned, or queue was filled while already idle).
+        if both_idle and self._queue:
+            self._dispatch_next()
         self._prev_speaker_state = speaker_state
+        self._prev_chanter_busy = chanter_busy
 
         state = speaker_state
-        if state == "idle" and self.chanter.is_chanting():
+        if state == "idle" and chanter_busy:
             state = "chanting"
         bar.set_state(state)
         if state != "idle":
             bar.tick()
+
+    def _dispatch_next(self) -> None:
+        sub = self._queue.popleft()
+        _tui_log.info("dispatch %s (%s)", sub.kind, sub.text[:40].replace("\n", " "))
+        if sub.kind == "speak":
+            if self.speaker:
+                self.speaker.say(sub.text)
+            return
+        if sub.kind == "chant":
+            self.chanter.chant(sub.mantra_id, mantra_text=sub.text, line_index=sub.line_index)
+            return
+        # Phase 4: listen substep — for now a no-op so the lesson advances.
+        if sub.kind == "listen":
+            return
 
     def _coaching_line(self, step: Step) -> str:
         if self.coaching is None:
@@ -264,24 +297,46 @@ class GuruApp(App):
     def _refresh(self, speak: bool = False) -> None:
         step = self.ritual.steps[self.index]
         total = len(self.ritual.steps)
-        line = self._coaching_line(step)
+        coaching = self._coaching_line(step)
         self.query_one("#step_header", StepHeader).render_header(step, self.index, total)
         self.query_one("#sa", SanskritPanel).render_sa(step)
-        self.query_one("#en", EnglishPanel).render_en(step, line)
+        self.query_one("#en", EnglishPanel).render_en(step, coaching)
         self.query_one("#sidebar", SidebarView).render_outline(self.ritual, self.index)
-        # Stop any in-flight chant from the previous step.
+        # Reset everything from the previous step.
+        if self.speaker:
+            self.speaker.stop()
         self.chanter.stop()
-        self._pending_chant = None
-        if speak and self.speaker and line:
-            self.speaker.say(line)
-            # Always demo the mantra once when we have a wav — even for mental-japa
-            # steps, the student needs to hear correct pronunciation before chanting
-            # internally. `chant_aloud` describes the student's recitation, not the
-            # guru's demonstration.
-            if self.chanter.has(step.mantra_id):
-                self._pending_chant = step.mantra_id
-        elif speak and self.chanter.has(step.mantra_id):
-            self.chanter.chant(step.mantra_id)
+        self._queue.clear()
+        self._prev_speaker_state = "idle"
+        self._prev_chanter_busy = False
+        if not speak:
+            return
+        # Build the per-step lesson queue: coaching → (action → chant)*  per line.
+        parsed = parse_mantra(step.mantra_text)
+        has_chant = self.chanter.has(step.mantra_id)
+        per_line_available = has_chant and self.chanter.has_any_line_clip(
+            step.mantra_id, len(parsed.lines)
+        )
+        self._queue = build_lesson(
+            coaching_line=coaching,
+            parsed_mantra=parsed if has_chant else parse_mantra(""),
+            mantra_id=step.mantra_id,
+            announce_per_line_actions=self.announce_per_line_actions,
+            call_and_response=False,  # Phase 4 will flip this on per advance_rule
+            per_line_clips_available=per_line_available,
+        )
+        # Warm the synth cache while the coaching is spoken so the first chant
+        # has zero perceived latency.
+        if has_chant:
+            self.chanter.prefetch(step.mantra_id, parsed.cleaned)
+        _tui_log.info(
+            "lesson built: %d substeps for step=%s has_chant=%s",
+            len(self._queue), step.id, has_chant,
+        )
+        # Kick the first substep immediately so the user hears the guru without
+        # waiting for the first tick (~125 ms).
+        if self._queue:
+            self._dispatch_next()
 
     def action_next_step(self) -> None:
         if self.index < len(self.ritual.steps) - 1:
@@ -308,11 +363,15 @@ class GuruApp(App):
 
     def action_replay_mantra(self) -> None:
         step = self.ritual.steps[self.index]
+        _tui_log.info(
+            "m pressed: step=%s mantra=%s has_wav=%s",
+            step.id, step.mantra_id, self.chanter.has(step.mantra_id),
+        )
         if self.chanter.has(step.mantra_id):
             self._pending_chant = None
             if self.speaker:
                 self.speaker.stop()
-            self.chanter.chant(step.mantra_id)
+            self.chanter.chant(step.mantra_id, mantra_text=parse_mantra(step.mantra_text).cleaned)
 
     def action_silence(self) -> None:
         if self.speaker:

@@ -224,3 +224,6 @@ uv.lock.bak
 
 # Personal lineage — copied from identity.example.yaml and filled in locally.
 identity.yaml
+
+assets/coaching/*.wav
+Rigveda-Sandhyavandanam-Eng-v1.pdf

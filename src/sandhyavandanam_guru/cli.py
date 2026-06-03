@@ -77,8 +77,74 @@ def _resolve_clone_ref(explicit_rel: str | None) -> Path:
     return config.PROJECT_ROOT / manifest[0]["path"]
 
 
+def _build_chanter(s: Settings):
+    from .audio.chanter import Chanter
+
+    bank = config.PROJECT_ROOT / "assets" / "mantras"
+    mode = s.tts.mantra.mode
+    synth = None
+    if mode == "sarvam":
+        try:
+            from .audio.sarvam_chanter import SarvamChanter
+
+            print(
+                f"[sgr] mantra source: Sarvam Bulbul "
+                f"(speaker={s.tts.mantra.sarvam.speaker}, lang={s.tts.mantra.sarvam.target_language})",
+                file=sys.stderr,
+            )
+            synth = SarvamChanter(
+                model=s.tts.mantra.sarvam.model,
+                speaker=s.tts.mantra.sarvam.speaker,
+                target_language=s.tts.mantra.sarvam.target_language,
+                transliterate=s.tts.mantra.sarvam.transliterate,
+                source_scheme=s.tts.mantra.sarvam.source_scheme,
+            )
+        except Exception as e:
+            print(f"[sgr] Sarvam unavailable ({e}); falling back to bank only.", file=sys.stderr)
+            mode = "bank"
+    elif mode in ("fallback", "mms"):
+        try:
+            from .audio.mms_chanter import MMSChanter
+
+            print(
+                f"[sgr] mantra fallback: MMS-Sanskrit (facebook/mms-tts-san) "
+                f"— first run downloads ~150 MB",
+                file=sys.stderr,
+            )
+            synth = MMSChanter()
+        except Exception as e:
+            print(f"[sgr] MMS-Sanskrit unavailable ({e}); mantras without wav will be silent.", file=sys.stderr)
+            if mode == "mms":
+                mode = "bank"
+    return Chanter(bank, mode=mode, mms=synth)
+
+
 def _build_speaker(s: Settings):
     backend = s.tts.backend
+    if backend == "recording":
+        from .audio.tts_recording import RecordedSpeaker
+
+        coaching_dir = config.PROJECT_ROOT / "assets" / "coaching"
+        print(
+            f"[sgr] recorded coaching voice — reading wavs from {coaching_dir.relative_to(config.PROJECT_ROOT)}/",
+            file=sys.stderr,
+        )
+        return RecordedSpeaker(coaching_dir)
+    if backend == "sarvam":
+        try:
+            from .audio.tts_sarvam import SarvamSpeaker
+
+            print(
+                f"[sgr] Sarvam Bulbul — speaker={s.tts.sarvam.speaker} lang={s.tts.sarvam.target_language}",
+                file=sys.stderr,
+            )
+            return SarvamSpeaker(
+                model=s.tts.sarvam.model,
+                speaker=s.tts.sarvam.speaker,
+                target_language=s.tts.sarvam.target_language,
+            )
+        except Exception as e:
+            print(f"[sgr] Sarvam speaker unavailable ({e}); falling back to Piper.", file=sys.stderr)
     if backend == "openvoice":
         try:
             from .audio.tts_openvoice import OpenVoiceSpeaker
@@ -160,11 +226,22 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--coaching", default=None, help="Override coaching YAML path.")
     p.add_argument(
         "--voice",
-        choices=["piper", "openvoice", "melotts", "f5"],
+        choices=["piper", "openvoice", "melotts", "f5", "sarvam", "recording"],
         default=None,
         help="Override tts.backend.",
     )
     p.add_argument("--clone-ref", default=None, help="Override tts.openvoice.clone_ref.")
+    p.add_argument(
+        "--recording",
+        action="store_true",
+        help="Shorthand for --voice recording --mantra bank (plays your own recorded clips).",
+    )
+    p.add_argument(
+        "--mantra",
+        choices=["bank", "fallback", "mms", "sarvam"],
+        default=None,
+        help="Mantra audio source. bank=wav only, fallback=wav+MMS, mms=MMS-Sanskrit for all, sarvam=Sarvam Bulbul (cloud).",
+    )
     p.add_argument("--no-audio", action="store_true", help="Disable TTS — silent study-aid mode.")
     p.add_argument("--dry-run", action="store_true", help="List steps and exit (no TUI).")
     p.add_argument(
@@ -186,10 +263,15 @@ def main(argv: list[str] | None = None) -> int:
 
     extra_path = Path(args.config) if args.config else None
     settings = load_settings(extra_path)
+    if args.recording:
+        settings.tts.backend = "recording"  # type: ignore[assignment]
+        settings.tts.mantra.mode = "bank"
     if args.voice:
         settings.tts.backend = args.voice  # type: ignore[assignment]
     if args.clone_ref:
         settings.tts.openvoice.clone_ref = args.clone_ref
+    if args.mantra:
+        settings.tts.mantra.mode = args.mantra  # type: ignore[assignment]
 
     ritual_path = args.ritual or str(settings.ritual_path())
     coaching_path = args.coaching or str(settings.coaching_path())
@@ -202,7 +284,8 @@ def main(argv: list[str] | None = None) -> int:
     ritual = load_ritual(ritual_path)
     coaching = load_coaching(coaching_path)
     speaker = None if args.no_audio else _build_speaker(settings)
-    GuruApp(ritual, coaching=coaching, speaker=speaker).run()
+    chanter = _build_chanter(settings)
+    GuruApp(ritual, coaching=coaching, speaker=speaker, chanter=chanter).run()
     return 0
 
 

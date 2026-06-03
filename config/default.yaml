@@ -60,6 +60,27 @@ tts:
     nfe_step: 16             # diffusion steps: 32=default quality, 16=2x faster, 8=gritty
     remove_silence: false    # true can cause text repetition on chunk boundaries
 
+  # Mantra audio: which source plays after the coaching line.
+  #   bank     — only play assets/mantras/<id>.wav; skip silently if missing
+  #   fallback — play wav if present, else synthesize with MMS-Sanskrit (recommended)
+  #   mms      — always use MMS-Sanskrit TTS (ignore the wav bank)
+  # CLI override: --mantra {bank,fallback,mms}
+  # Sarvam Bulbul as English coaching voice (cloud).
+  # Use the same speaker as the mantra chanter for a consistent voice.
+  sarvam:
+    model: bulbul:v3
+    speaker: sumit
+    target_language: en-IN
+
+  mantra:
+    mode: bank          # bank=wav only, sarvam=cloud TTS for all (needs SARVAM_API_KEY)
+    sarvam:
+      model: bulbul:v3
+      speaker: sumit          # try: shubh, anushka, manisha, vidya, abhilash, karun, hitesh, sumit
+      target_language: hi-IN  # Sanskrit-in-Devanagari renders well on hi-IN
+      transliterate: true     # roman Sanskrit → Devanagari before sending (much better pronunciation)
+      source_scheme: itrans   # itrans | hk | iast | slp1 — matches the mantra_text romanization
+
 # Recognition + advance thresholds (Phase 4).
 thresholds:
   similarity_auto_advance: 0.85

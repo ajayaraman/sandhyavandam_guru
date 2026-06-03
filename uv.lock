@@ -3850,6 +3850,15 @@ wheels = [
 ]
 
 [[package]]
+name = "python-dotenv"
+version = "1.2.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/82/ed/0301aeeac3e5353ef3d94b6ec08bbcabd04a72018415dcb29e588514bba8/python_dotenv-1.2.2.tar.gz", hash = "sha256:2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3", size = 50135, upload-time = "2026-03-01T16:00:26.196Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/d7/1959b9648791274998a9c3526f6d0ec8fd2233e4d4acce81bbae76b44b2a/python_dotenv-1.2.2-py3-none-any.whl", hash = "sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a", size = 22101, upload-time = "2026-03-01T16:00:25.09Z" },
+]
+
+[[package]]
 name = "python-multipart"
 version = "0.0.30"
 source = { registry = "https://pypi.org/simple" }
@@ -4331,6 +4340,12 @@ eval = [
     { name = "numpy" },
     { name = "sounddevice" },
 ]
+sarvam = [
+    { name = "numpy" },
+    { name = "python-dotenv" },
+    { name = "sarvamai" },
+    { name = "sounddevice" },
+]
 shootout = [
     { name = "faster-whisper" },
     { name = "indic-transliteration" },
@@ -4358,6 +4373,7 @@ requires-dist = [
     { name = "numpy", marker = "extra == 'clone-f5'", specifier = ">=1.26" },
     { name = "numpy", marker = "extra == 'dev'", specifier = ">=1.26" },
     { name = "numpy", marker = "extra == 'eval'", specifier = ">=1.26" },
+    { name = "numpy", marker = "extra == 'sarvam'", specifier = ">=1.26" },
     { name = "openai", marker = "extra == 'audio'", specifier = ">=1.40" },
     { name = "openai", marker = "extra == 'shootout'", specifier = ">=1.40" },
     { name = "openai", marker = "extra == 'shootout-mlx'", specifier = ">=1.40" },
@@ -4365,20 +4381,38 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
+    { name = "python-dotenv", marker = "extra == 'sarvam'", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.7" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5" },
+    { name = "sarvamai", marker = "extra == 'sarvam'", specifier = ">=0.1" },
     { name = "silero-vad", marker = "extra == 'audio'", specifier = ">=5.1" },
     { name = "sounddevice", marker = "extra == 'audio'", specifier = ">=0.4" },
     { name = "sounddevice", marker = "extra == 'clone'", specifier = ">=0.4" },
     { name = "sounddevice", marker = "extra == 'clone-f5'", specifier = ">=0.4" },
     { name = "sounddevice", marker = "extra == 'eval'", specifier = ">=0.4" },
+    { name = "sounddevice", marker = "extra == 'sarvam'", specifier = ">=0.4" },
     { name = "soundfile", marker = "extra == 'clone'", specifier = ">=0.12" },
     { name = "soundfile", marker = "extra == 'clone-f5'", specifier = ">=0.12" },
     { name = "textual", specifier = ">=0.79" },
     { name = "torchcodec", marker = "extra == 'clone-f5'", specifier = ">=0.13" },
 ]
-provides-extras = ["eval", "shootout", "shootout-mlx", "audio", "clone", "clone-f5", "dev"]
+provides-extras = ["eval", "shootout", "shootout-mlx", "audio", "clone", "sarvam", "clone-f5", "dev"]
+
+[[package]]
+name = "sarvamai"
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pydantic-core" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2b/84/c3bef9b3ea3ea202789eac983d8e8ac41c687f6f2491d7ad1ba2c5ad8b1b/sarvamai-0.1.5.tar.gz", hash = "sha256:d30e13d35e2e8e33d073011d29b646fe3a8eb1e3d5115cbd716b5b0e8a6ebc9f", size = 39746, upload-time = "2025-06-06T11:30:41.835Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9b/c7/60c224a3b10648114bf9a799af7c7bef41bfebe7c582dceabb31a8ed23b5/sarvamai-0.1.5-py3-none-any.whl", hash = "sha256:29920781a9a2a49f5f397a13c13cb42a0f2ad1aa52806354bd611d0d5d681619", size = 80544, upload-time = "2025-06-06T11:30:40.538Z" },
+]
 
 [[package]]
 name = "scikit-learn"

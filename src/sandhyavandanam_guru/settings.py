@@ -64,13 +64,43 @@ class F5TTSSettings(BaseModel):
     remove_silence: bool = False  # F5 chunking + silence-trim can cause text repetition
 
 
+class SarvamSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    model: str = "bulbul:v3"
+    speaker: str = "sumit"
+    target_language: str = "hi-IN"  # Sanskrit-in-Devanagari renders well on hi-IN
+    transliterate: bool = True
+    source_scheme: Literal["itrans", "hk", "iast", "slp1"] = "itrans"
+
+
+class SarvamSpeakerSettings(BaseModel):
+    """Sarvam Bulbul as the English coaching voice (replaces piper)."""
+    model_config = ConfigDict(extra="forbid")
+    model: str = "bulbul:v3"
+    speaker: str = "sumit"
+    target_language: str = "en-IN"
+
+
+class MantraSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    # mode controls which mantra audio source is used:
+    #   "bank"      — play assets/mantras/<id>.wav only; skip silently if missing
+    #   "fallback"  — play wav if present, else synthesize with MMS-Sanskrit
+    #   "mms"       — always synthesize with MMS-Sanskrit (ignore wav bank)
+    #   "sarvam"    — always synthesize via Sarvam Bulbul (needs SARVAM_API_KEY)
+    mode: Literal["bank", "fallback", "mms", "sarvam"] = "fallback"
+    sarvam: SarvamSettings = SarvamSettings()
+
+
 class TTSSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    backend: Literal["piper", "openvoice", "melotts", "f5"]
+    backend: Literal["piper", "openvoice", "melotts", "f5", "sarvam"]
     piper: PiperSettings
     openvoice: OpenVoiceSettings
     melotts: MeloTTSSettings = MeloTTSSettings()
     f5: F5TTSSettings = F5TTSSettings()
+    sarvam: SarvamSpeakerSettings = SarvamSpeakerSettings()
+    mantra: MantraSettings = MantraSettings()
 
 
 class Thresholds(BaseModel):

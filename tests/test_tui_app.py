@@ -106,7 +106,8 @@ async def test_app_speaks_first_coaching_line_on_mount(ritual, coaching, speaker
     async with app.run_test() as pilot:
         await pilot.pause()
         assert speaker.says, "expected at least one say() on mount"
-        assert speaker.says[0] == coaching.for_step(ritual.steps[0].id)
+        # The TUI may append a short action-cue preamble from mantra_text.
+        assert speaker.says[0] == coaching.for_step(ritual.steps[0].id).strip()
 
 
 async def test_right_arrow_advances_step(ritual, coaching, speaker) -> None:
@@ -171,7 +172,9 @@ async def test_r_replays_current_line(ritual, coaching, speaker) -> None:
         speaker.says.clear()
         await pilot.press("r")
         await pilot.pause()
-        assert speaker.says == [coaching.for_step(ritual.steps[0].id)]
+        # Compare against the full coaching line as the app composes it
+        # (raw coaching + any mantra action-preamble appended by the TUI).
+        assert speaker.says == [app._coaching_line(ritual.steps[0]).strip()]
 
 
 async def test_s_silences(ritual, coaching, speaker) -> None:
@@ -208,8 +211,11 @@ async def test_status_bar_shows_loading_during_warmup(ritual, coaching, speaker)
         assert "tts.log" in bar_text
 
 
-async def test_status_bar_idle_when_no_speaker(ritual, coaching) -> None:
-    app = tui.GuruApp(ritual, coaching=coaching, speaker=None)
+async def test_status_bar_idle_when_no_speaker(ritual, coaching, tmp_path) -> None:
+    from sandhyavandanam_guru.audio.chanter import Chanter
+    # Empty bank dir so the chanter has nothing to play either.
+    empty_chanter = Chanter(tmp_path)
+    app = tui.GuruApp(ritual, coaching=coaching, speaker=None, chanter=empty_chanter)
     async with app.run_test() as pilot:
         await pilot.pause()
         # 8 Hz tick — give it a frame.

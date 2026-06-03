@@ -43,6 +43,11 @@ tts:
     # eval/recordings/manifest_clean.json. Reference language doesn't matter —
     # OpenVoice clones timbre only, accent comes from MeloTTS-EN-India.
     clone_ref: null
+  # Bare MeloTTS without the OpenVoice clone overlay — useful for A/B testing
+  # the accent baseline (no cloning) versus the full OpenVoice clone path.
+  melotts:
+    language: EN_Default
+    speed: 1.0
 
 # Recognition + advance thresholds (Phase 4).
 thresholds:

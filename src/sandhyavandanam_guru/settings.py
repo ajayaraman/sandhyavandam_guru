@@ -44,15 +44,22 @@ class PiperSettings(BaseModel):
 
 class OpenVoiceSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    language: Literal["EN_INDIA", "EN_US", "EN_BR", "EN_AU", "EN_DEFAULT"] = "EN_INDIA"
+    language: Literal["EN_INDIA", "EN_US", "EN_BR", "EN_AU", "EN_Default"] = "EN_INDIA"
     clone_ref: str | None = None
+
+
+class MeloTTSSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    language: Literal["EN_INDIA", "EN_US", "EN_BR", "EN_AU", "EN_Default"] = "EN_Default"
+    speed: float = Field(gt=0.3, le=2.0, default=1.0)
 
 
 class TTSSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    backend: Literal["piper", "openvoice"]
+    backend: Literal["piper", "openvoice", "melotts"]
     piper: PiperSettings
     openvoice: OpenVoiceSettings
+    melotts: MeloTTSSettings = MeloTTSSettings()
 
 
 class Thresholds(BaseModel):

@@ -92,6 +92,17 @@ def _build_speaker(s: Settings):
             return OpenVoiceSpeaker(ref_wav=ref_wav, language=s.tts.openvoice.language)
         except Exception as e:
             print(f"[sgr] OpenVoice unavailable ({e}); falling back to Piper.", file=sys.stderr)
+    if backend == "melotts":
+        try:
+            from .audio.tts_melotts import MeloSpeaker
+
+            print(
+                f"[sgr] MeloTTS bare — lang={s.tts.melotts.language} speed={s.tts.melotts.speed}",
+                file=sys.stderr,
+            )
+            return MeloSpeaker(language=s.tts.melotts.language, speed=s.tts.melotts.speed)
+        except Exception as e:
+            print(f"[sgr] MeloTTS unavailable ({e}); falling back to Piper.", file=sys.stderr)
     try:
         from .audio.tts_piper import PiperSpeaker
 
@@ -106,7 +117,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--config", default=None, help="Extra YAML overlay (deep-merged on top of defaults).")
     p.add_argument("--ritual", default=None, help="Override ritual YAML path.")
     p.add_argument("--coaching", default=None, help="Override coaching YAML path.")
-    p.add_argument("--voice", choices=["piper", "openvoice"], default=None, help="Override tts.backend.")
+    p.add_argument(
+        "--voice",
+        choices=["piper", "openvoice", "melotts"],
+        default=None,
+        help="Override tts.backend.",
+    )
     p.add_argument("--clone-ref", default=None, help="Override tts.openvoice.clone_ref.")
     p.add_argument("--no-audio", action="store_true", help="Disable TTS — silent study-aid mode.")
     p.add_argument("--dry-run", action="store_true", help="List steps and exit (no TUI).")

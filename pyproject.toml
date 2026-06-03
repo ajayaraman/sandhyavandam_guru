@@ -1,0 +1,40 @@
+[project]
+name = "sandhyavandanam-guru"
+version = "0.1.0"
+description = "Terminal coach that walks an initiate through the Rigveda Pratah Sandhyavandanam ritual."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "pyyaml>=6.0",
+    "textual>=0.79",
+    "rich>=13.7",
+]
+
+[project.optional-dependencies]
+eval = ["sounddevice>=0.4", "numpy>=1.26"]
+shootout = ["faster-whisper>=1.0", "openai>=1.40", "indic-transliteration>=2.3"]
+shootout-mlx = ["mlx-whisper>=0.4", "openai>=1.40", "indic-transliteration>=2.3"]
+audio = [
+    "faster-whisper>=1.0",
+    "piper-tts>=1.2",
+    "sounddevice>=0.4",
+    "numpy>=1.26",
+    "silero-vad>=5.1",
+    "openai>=1.40",
+    "indic-transliteration>=2.3",
+]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[project.scripts]
+sgr = "sandhyavandanam_guru.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sandhyavandanam_guru"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

@@ -1,0 +1,508 @@
+# Rigveda Pratah Sandhyavandanam — canonical 26 actions.
+# Source: bharatiweb.com "Rigveda Sandhyavandanam v1" PDF (user-supplied).
+# Transliteration kept close to PDF (pseudo-IAST, lowercase) so it round-trips with
+# what the student is most likely to read in front of them.
+
+sandhya_kind: pratah
+
+steps:
+  - id: 01_aachamanam
+    name_sa: aachamanam
+    name_en: Purificatory water-sipping
+    posture: sit squatting, facing east or north; hands between the knees
+    physical_action: |
+      Bend all fingers except the thumb and small finger so the palm forms a hollow.
+      Take a very small quantity of water in the palm and sip once for each of the
+      first three mantras. Then touch the face/body parts as listed while saying
+      each of the keshavaadi names.
+    mantra_id: m01_keshavaadi
+    mantra_text: |
+      om achyutaaya namaha
+      om anantaaya namaha
+      om govindaaya namaha
+      keshavaaya namaha   (touch right cheek with right thumb)
+      naaraayaNaaya namaha   (touch left cheek with right thumb)
+      maadhavaaya namaha   (touch right eye with right ring finger)
+      govindaaya namaha   (touch left eye with right ring finger)
+      vishNave namaha   (touch right nostril with right index finger)
+      madhusoodanaaya namaha   (touch left nostril with right index finger)
+      trivikramaaya namaha   (touch left ear with right small finger)
+      vaamanaaya namaha   (touch left ear with right small finger)
+      shreedharaaya namaha   (touch right shoulder with right middle finger)
+      hRushikeshaaya namaha   (touch left shoulder with right middle finger)
+      padmanaabhaaya namaha   (touch naval with right hand)
+      daamodaraaya namaha   (touch head with right hand)
+    translation: Salutations to the imperishable, infinite, all-pervading Lord under his fifteen names.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 02_praanaayaama
+    name_sa: praaNaayaama
+    name_en: Breath control
+    posture: seated; right thumb on right nostril, ring and small fingers on left
+    physical_action: |
+      Inhale through left nostril while mentally chanting the full mantra once;
+      hold breath, chanting once more; exhale through right nostril, chanting once more.
+      Three rounds inhale-hold-exhale = one praaNaayaama. Do at least three.
+    mantra_id: m02_praanaayaama
+    mantra_text: |
+      om bhoohu
+      om bhuvaha
+      om suvaha
+      om mahaha
+      om janaha
+      om tapaha
+      om satyam
+      om tatsavitu vareNyam bhargodevasya dheemahi dheeyoyonah prachodayaat
+      om aapo jyotirasomrutam brahma bhoor bhuvassuvarom
+    translation: The seven vyaahritis, the Gayatri, and the Mahaa-mantra together.
+    repeat_count: 3
+    advance_rule: user_confirm
+
+  - id: 03_sankalpam
+    name_sa: sankalpam
+    name_en: Statement of resolve
+    posture: left palm up on right thigh; right palm down on left palm
+    physical_action: Place the hands as described and recite the sankalpa once.
+    mantra_id: m03_sankalpam
+    mantra_text: |
+      mama upaatta samasta durita kshaya dwaaraa shree parameshwara preetyartham
+      praatah sandhyaam karishye
+    translation: For the destruction of all my accumulated sins and the pleasure of the Supreme Lord, I undertake the morning sandhya.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 04_mantra_prokshanam
+    name_sa: mantra prokshaNam
+    name_en: Sprinkling water with mantras
+    posture: seated
+    physical_action: |
+      Saying "om keshavaaya namaha", write "om" on the surface of the water with
+      a finger and touch the spot between the eyebrows. Then while reciting the
+      first seven of the nine mantras, sprinkle water on the head with the ring
+      finger. On the eighth mantra, sprinkle on the feet. On the ninth, head again.
+    mantra_id: m04_aapohishtha
+    mantra_text: |
+      aapohishThaa mayo bhuvaha | tana oorje dadhaatana | maheraNaaya chakshase |
+      yovah shivatamorasah tasya bhaajayate hanaha | ushateeriva maataraha |
+      tasma aranga maamava | yasya kshayaya jinvadha | aapo janayata janaha |
+      om bhoorbhuvassuvaha ||
+      (then rotate water-filled palm around the head:)
+      om bhoorbhuvassuvaha
+    translation: O Waters, you are the source of bliss; grant us nourishment and the sight of the great delight.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 05_praashanam
+    name_sa: praashanam
+    name_en: Sipping water with the sin-effacing mantra (morning)
+    posture: seated
+    physical_action: Take a little water in the palm and sip after reciting the mantra.
+    mantra_id: m05_praashanam_pratah
+    mantra_text: |
+      sooryashcha ma manyushcha manyu patayashcha manyukRutebhya paapebhyo rakshantam
+      yad raatryaa paapa maa karsham
+      manasaa vaachaa hastabhyam padbhyaam udareNa shishna
+      raatreeh tadaa valumbatu
+      yad kincha duritam mayi
+      idam aham mama amRuta yonou
+      soorya jyotishee juhomi svaahaa
+    translation: May Surya and the lords of anger protect me from sins born of anger. Whatever wrong I did at night by mind/word/hand/foot/belly/sex, let the night carry it away. I offer it as oblation into the immortal womb of the Sun's light.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 06_aachamanam_2
+    name_sa: aachamanam
+    name_en: Second water-sipping
+    posture: seated
+    physical_action: Sip water once for each of the three names.
+    mantra_id: m06_achyuta_short
+    mantra_text: |
+      om achyutaaya namaha
+      om anantaaya namaha
+      om govindaaya namaha
+    translation: Salutations to Achyuta, Ananta, Govinda.
+    repeat_count: 1
+    advance_rule: auto
+
+  - id: 07_punah_prokshanam
+    name_sa: punah prokshaNam
+    name_en: Sprinkling water again
+    posture: seated
+    physical_action: Sprinkle water on the head with the following mantra.
+    mantra_id: m07_dadhikraavan
+    mantra_text: |
+      dadhikraavaNNa iti mantrasya vaamadeva rushihi
+      anushTup cChandaha
+      dadhikraava devataa
+      apaam prokshaNe viniyogaha
+      om dadhikraavaNNo akaarisham jishNorashvasya vaajinah
+      surabhee no mukhaakaraat praaNa aayugmshi taarishat
+      aapo hishThaa mayobhuvaha tana oorje dadhaatana
+      maheraNaaya chakshase yovah shivatamo rasaha
+      tasya bhaajayatehanaha ushateeriva maataraha
+      tasmaa arangamaamavaha yasya kshayaaya jinvata
+      aapo janayataachanaha om bhoorbhuvassuvaha
+      rutancha satyancha tapasodyata tato raatree jaayataa tadaa samudro aarNavaa
+      samudradaarNavaa dadhi samvadvaro ajaayata
+      aho raatraani vidhatat viswasyamishadho vasi
+      soorya chandramaasou tadaa yat poorvamagalpayat
+      divancha pruthveem santarishmato suva
+    translation: Invocation of Dadhikraavan, repetition of the Apohishthaa block, and the cosmic-origin verses.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 08_arghya_pradaanam
+    name_sa: arghya pradaanam
+    name_en: Offering water to the Sun
+    posture: stand facing east
+    physical_action: |
+      Take plenty of water in both palms. Raise the heels slightly. Pour the
+      water down through the tips of the fingers (not over the thumb).
+      Repeat three times, reciting the full Gayatri each time.
+    mantra_id: m08_gayatri_arghya
+    mantra_text: |
+      om bhoorbhuvassuvah tatsaviturvareNyam |
+      bhargo devasya dheemahi dheeyo yonah prachodayaat ||
+    translation: The Gayatri Mantra.
+    repeat_count: 3
+    advance_rule: recitation_match
+
+  - id: 09_praayashchita_arghyam
+    name_sa: praayashchita arghyam
+    name_en: Atonement offering for delayed worship
+    posture: stand facing east
+    physical_action: |
+      Do one praaNaayaama (as in step 2). Offer arghya once more (as in step 8).
+      Then reciting "om bhoorbhuvassuvaha", turn round once and sprinkle a
+      little water around you. Recite the morning-specific atonement mantra.
+    mantra_id: m09_praayashchita_pratah
+    mantra_text: |
+      om yadatya gacCha vRutrahaan | udaaya abhisoorya
+      sarvaan dateendra te vaache
+    translation: O Indra, slayer of Vrtra, in whatever you proceed at the rising sun, all is given to your speech.
+    repeat_count: 1
+    advance_rule: user_confirm
+
+  - id: 10_aikyaanusandhaanam
+    name_sa: aikyaanusandhaanam
+    name_en: Meditation on identity with the Supreme
+    posture: sit, close the eyes
+    physical_action: Sit, close the eyes, and mentally chant.
+    mantra_id: m10_asavaadityo
+    mantra_text: asavaadityo brahma brahmai vaham asmi
+    translation: That sun is Brahman. I am verily that Brahman.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 11_deva_tarpanam
+    name_sa: deva tarpaNam
+    name_en: Offering water to the gods
+    posture: squat, facing east
+    physical_action: |
+      Pour water through the fingertips of both hands while naming each deity.
+      Nine grahas, then the twelve keshavaadi names (21 oblations total).
+    mantra_id: m11_tarpanam
+    mantra_text: |
+      aadityam tarpayaami
+      somam tarpayaami
+      angaarakam tarpayaami
+      budham tarpayaami
+      bRuhaspatim tarpayaami
+      shukram tarpayaami
+      shanaishcharam tarpayaami
+      raahum tarpayaami
+      ketum tarpayaami
+      keshavam tarpayaami
+      naaraayaNam tarpayaami
+      maadhavam tarpayaami
+      govindam tarpayaami
+      vishNum tarpayaami
+      madhusoodanam tarpayaami
+      trivikramam tarpayaami
+      vaamanam tarpayaami
+      shreedharam tarpayaami
+      hRushikesham tarpayaami
+      padmanaabham tarpayaami
+      daamodaram tarpayaami
+    translation: I gratify the nine grahas and the twelve forms of Vishnu with water.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 12_japa_sankalpa
+    name_sa: japa sankalpa
+    name_en: Resolve for Gayatri japa
+    posture: sit on plank/mat, facing east; vessel of water in front; eyes half-closed
+    physical_action: |
+      First chant the shuklaambara verse. Then one praaNaayaama (12.1).
+      Then state the sankalpa with hands as in step 3.
+    mantra_id: m12_japa_sankalpa
+    mantra_text: |
+      shuklaambaradharam vishNum shashivarNam chaturbhujam
+      prasanna vadanam dhyaayet sarva vighnopashaantaye
+      (12.1 praaNaayaama)
+      om bhoohu | om bhuvaha | om suvaha | om mahaha | om janaha | om tapaha | om satyam
+      om tatsavitur vareNyam bhargo devasya dheemahi dheeyo yonah prachodayaat
+      om aapojyotirasa amrutam brahma bhoorbhuvassuvarom
+      (sankalpa:)
+      mama upaatta samasta durita kshaya dvaaraa shree parameshwara preetyartham
+      praatah sandhyaa gaayatree mahaamantra japam karishye
+    translation: I meditate on Vishnu, white-robed, moon-coloured, four-armed, with a serene face, for the removal of all obstacles. I now resolve to perform the Gayatri Mahaamantra japa of the morning sandhya.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 13_pranava_japam
+    name_sa: praNava japam
+    name_en: Invocation of the Pranava (Om)
+    posture: seated
+    physical_action: Touch head, upper lip, chest in turn while reciting the assignments. Then three praaNaayaamas.
+    mantra_id: m13_pranava
+    mantra_text: |
+      praNavasya rushi brahma   (touch head)
+      devee gaayatree cChandaha   (touch upper lip)
+      paramaatmaa devataa   (touch chest)
+      bhooraadi sapta vyaahruteenaam atri bhrugu kutsa vasishTha goutama
+      kaashyapa aangeerasa rushayaha   (touch head)
+      gaayatree ushnika anushTup bruhati pankti trishTup jagatyah cChandaamsi   (touch upper lip)
+      agni vaayu arka vaageesha varuNa indra vishvedeva devataah   (touch chest)
+      (13.1 — three praaNaayaamas as in step 2)
+    translation: Assignment of rishi/chandas/devataa to Om, the seven vyaahritis, and the Gayatri.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 14_gaayatree_aavaahanam
+    name_sa: gaayatree aavaahanam
+    name_en: Invoking Gayatri
+    posture: seated
+    physical_action: |
+      Touching head/upper-lip/chest while declaring rishi/chandas/devataa.
+      Then with the aavaahani mudra invoke Gayatri into the heart.
+    mantra_id: m14_aavaahanam
+    mantra_text: |
+      ayatu iti anuvaakasya vaamadeva rushihi   (touch head)
+      anushTup cChandaha   (touch upper lip)
+      gaayatree devataa   (touch chest)
+      om ityekaaksharam brahmaa agnir devataa brahmaa preetyartham
+      gaayatram cChandam paramaatmam svaroopam saajyam viniyogam
+      aayatu varadaa devi akshatram brahma samhitam
+      gaayatri Chandasam matedam brahma jushaswana
+      oojosi sahosi balamasi brajosi devaanaam dhaama naamaasi
+      vishwamasi vishwaayu sarvamasi sarvaayu abhipoorom
+      gaayatreem aavahayaami saavitreem aavaahayaami
+      saraswateem aavaahayaami chChanda Rushinaam aavaahayaami shriyam aavaahayaami
+      gaayatrya gaayatrishChando vishwaamitra rushihi savitaa devataa
+      agnir mukham brahma shiro vishNu hrudaya rudra shikhaa pruthvee
+      yoni praaNa apaana vyaano daana samaano sapraaNaa shweta varNa
+      sankhyayaana sagotra
+      gaayatri chatur vishatyakshara tripada sadrushi pancha sheershopanayane viniyogaha
+    translation: Invocation of Gayatri devi as the syllable-mother of the Veda.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 15_gaayatree_nyaasam
+    name_sa: gaayatree nyaasam
+    name_en: Placement of the Gayatri on the body
+    posture: seated
+    physical_action: Touch head, upper lip, chest while declaring rishi/chandas/devataa.
+    mantra_id: m15_nyaasam
+    mantra_text: |
+      saavitrya rushih vishvaamitraha   (touch head)
+      niChrudgaayatree cChandaha   (touch upper lip)
+      savitaa devataa   (touch chest)
+    translation: Vishwamitra is the rishi, Nichrut-Gayatri the metre, Savitr the deity.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 16_gaayatree_japam
+    name_sa: gaayatree japam
+    name_en: Gayatri japa (×108)
+    posture: stand facing east, palms joined and held in front of the face
+    physical_action: |
+      Cover the joined hands with the angavastra or a piece of cloth.
+      Chant the Gayatri mantra mentally 108 times. No movement of the lips.
+    mantra_id: m16_gayatri
+    mantra_text: |
+      om bhoorbhuvasvah tatsaviturvareNyam
+      bhargodevasya dheemahi dheeyo yonah prachodayaat
+    translation: The Gayatri Mantra.
+    repeat_count: 108
+    advance_rule: user_confirm
+
+  - id: 17_gaayatree_upasthaanam
+    name_sa: gaayatree upasthaanam
+    name_en: Asking Gayatri to return to her abode
+    posture: first sit for a praaNaayaama, then stand facing east, palms joined
+    physical_action: One praaNaayaama (17.1), then stand and recite the upasthaanam (17.2).
+    mantra_id: m17_upasthaanam
+    mantra_text: |
+      (17.1 praaNaayaama)
+      (17.2) praatah sandhyaam upasthaanam karishye
+    translation: I will now perform the upasthaanam of the morning sandhya.
+    repeat_count: 1
+    advance_rule: user_confirm
+
+  - id: 18_soorya_upasthaanam
+    name_sa: soorya upasthaanam
+    name_en: Prayer to the Sun
+    posture: stand facing east, palms joined, saluting the Paramaatman in the rising sun
+    physical_action: One praaNaayaama (18.1), then the morning upasthaanam block (18.2).
+    mantra_id: m18_mitrasya_pratah
+    mantra_text: |
+      (18.1 praaNaayaama)
+      mitrasya charshani druto aavo devasya sanaasi dyumnam chitra shravasthamam
+      mitro janaan yataayati bruvaano mitro dataara pruthveem udatyam
+      mitra srushTir nimishaa abhishTe mitraaya havyam grutavajjuhotaa
+      prashamitra marto astu prayaswaan yasta aaditya shikshati vrutena
+      na hanyate na jeeyate dvoto sannama aho asnoDhyamtito na doorata
+    translation: Salutation to Mitra/Surya, the seer-friend of all beings, who is invoked with ghee-oblation; the worshipper of Mitra is not harmed.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 19_samashti_abhivaadanam
+    name_sa: samashTi abhivaadanam
+    name_en: Salutation to all + personal abhivaadanam
+    posture: stand facing the same direction as in step 18
+    physical_action: |
+      Turn round to the next direction after each of the first four mantras.
+      Then stand facing the original direction for the remaining lines, palms joined.
+      Finally declare your pravara/gotra/sutra/veda/name (load from
+      ~/.config/sandhyavandanam_guru/identity.yaml if available).
+    mantra_id: m19_abhivaadanam
+    mantra_text: |
+      sandhyaayai namaha
+      saavitryai namaha
+      gaayatryai namaha
+      saraswatyai namaha
+      sarvebhyo devataabhyo namo namaha
+      kaamo karshed manyur karshed namo namaha
+      abhivaadaye <pravara> rusheya pravaraanvita
+      <gotra> gotra
+      <sootra> sootra
+      <veda> veda adhyaayee
+      <name> sharmaNaam aham asmibho
+    translation: Salutations to Sandhya, Savitri, Gayatri, Sarasvati and to all devas. I salute, of such-and-such pravara, gotra, sutra, vedic recension, by name.
+    repeat_count: 1
+    advance_rule: user_confirm
+
+  - id: 20_digdevataa_vandanam
+    name_sa: digdevataa vandanam
+    name_en: Prostration to the deities of the directions
+    posture: stand facing the same direction as in step 16; turn to each direction in turn
+    physical_action: Turn to each direction in sequence and make obeisance.
+    mantra_id: m20_digdevataa
+    mantra_text: |
+      praachyai dishe namaha
+      dakshiNaayai dishe namaha
+      prateechyai dishe namaha
+      udeechyai dishe namaha
+      oordhvaaya namaha
+      aadhaaraaya namaha
+      antarikshaaya namaha
+      bhoomyai namaha
+      brahmaNe namaha
+      vishvane namaha
+      mrutyuve namaha
+    translation: Salutations to the east, south, west, north, above, below, mid-space, earth, Brahman, the All, and Death.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 21_yama_vandanam
+    name_sa: yama vandanam
+    name_en: Prostration to Yama
+    posture: stand facing south, palms joined
+    physical_action: Stand facing south with joined palms.
+    mantra_id: m21_yama
+    mantra_text: |
+      yamaaya namaha
+      yamaaya dharmaraajaaya mrutyuve cha antakaaya cha
+      vaivasvataaya kaalaaya sarva bhoota kshayaaya cha
+      ouDumbharaaya dagnaaya neelaaya parameshTine
+      vrukodharaaya chitraaya chitraguptaaya vai namaha
+      chitra guptaaya vai namaha om namaha iti
+    translation: Salutations to Yama Dharmaraaja under his eleven names.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 22_harihara_vandanam
+    name_sa: harihara vandanam
+    name_en: Prostration to Harihara
+    posture: stand facing west
+    physical_action: Stand facing west.
+    mantra_id: m22_harihara
+    mantra_text: |
+      rutagam satyam para brahma purusham krushNa pingaLam
+      oordhvaretam viroopaaksham vishva roopaaya vai namaha
+      vishwa roopaaya vai namaha om namaha iti
+    translation: Salutations to the Truth-and-Order, the Supreme Person, dark-tawny, urdhva-retas, three-eyed, of universal form.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 23_soorya_naaraayaNa_vandanam
+    name_sa: soorya naaraayaNa vandanam
+    name_en: Prostration to Surya-Narayana
+    posture: standing
+    physical_action: Recite the Surya-Narayana vandanam.
+    mantra_id: m23_soorya_naaraayaNa
+    mantra_text: |
+      namaha saavitre jagadeka chakshushe
+      jagat prasooti sthiti naasha hetave
+      trayeen maayayaa triguNaatmaa dhaariNe
+      virinchi naaraayaNa shankara aatmane
+      dhyeya sadaa savitru manDala madhyavartee
+      naaraayaNa sarasijaasana sannivishTa
+      keyooravaan makara kunDalavaan
+      kireeTi haari hiraNyavapur druta shankha chakra
+      shankha chakra gadaa paaNe dwaarakaa nilayaachyute
+      govinda punDareekaaksha rakshamaam sharaNaagatam
+      aakaashat paThitam toyam yadaa gacChati saagaram
+      sarva deva namaskaara shree keshavam prati gacChati
+      shree keshavam prati gacChati om nama iti
+    translation: Salutation to Savitr, the sole eye of the world; cause of creation, sustenance, dissolution; bearer of the three-fold Maaya and the three gunas; identical with Brahmaa-Vishnu-Shiva. As water falling from the sky reaches the sea, salutations offered to any deva reach Keshava.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 24_samarpanam
+    name_sa: samarpaNam
+    name_en: Dedication of fruits
+    posture: sit
+    physical_action: Take a little water in the palm and pour it down through the fingers after reciting the mantra.
+    mantra_id: m24_samarpanam
+    mantra_text: |
+      kaayena vaachaa manasendriyairvaa buddhyaatmanaavaa prakrute svabhaavaat
+      karomi yadyat sakalam parasmai
+      naaraayaNaayeti samarpayaami
+    translation: Whatever I do by body, speech, mind, senses, intellect, soul or by force of nature — all of it I dedicate to Narayana.
+    repeat_count: 1
+    advance_rule: recitation_match
+
+  - id: 25_aachamanam_3
+    name_sa: aachamanam
+    name_en: Closing water-sipping (the unnumbered 26th action)
+    posture: seated
+    physical_action: Sip water once for each of the three names. This unnumbered aachamanam appears between samarpaNam and rakshaa in the source PDF.
+    mantra_id: m06_achyuta_short
+    mantra_text: |
+      om achyutaaya namaha
+      om anantaaya namaha
+      om govindaaya namaha
+    translation: Salutations to Achyuta, Ananta, Govinda.
+    repeat_count: 1
+    advance_rule: auto
+
+  - id: 26_rakshaa
+    name_sa: rakshaa
+    name_en: Protection
+    posture: seated at the japa spot
+    physical_action: |
+      Sprinkle a little water at the spot where the japa was performed.
+      Touch that spot with the ring finger and then touch the forehead
+      between the eyebrows.
+    mantra_id: m26_rakshaa
+    mantra_text: |
+      adya no devaa savitaa prajaavat saavee soubhagam
+      para duswapneeya suva
+      vishwaani deva savitaa duritaani paraa suvaa
+      yad bhadram tama asuva
+    translation: Today, O divine Savitr, grant us prosperity together with progeny; drive away bad dreams. O Savitr, drive away all evils; bring to us whatever is auspicious.
+    repeat_count: 1
+    advance_rule: recitation_match

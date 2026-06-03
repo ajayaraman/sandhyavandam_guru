@@ -83,6 +83,14 @@ class OpenVoiceSpeaker:
         self._load_lock = threading.Lock()
         self.player = Player()
         self._speaking = threading.Event()
+        self._loading = threading.Event()
+
+    def state(self) -> str:
+        if self._speaking.is_set():
+            return "speaking"
+        if self._loading.is_set():
+            return "loading"
+        return "idle"
 
     def _ensure_loaded(self) -> None:
         if self._tts is not None:
@@ -163,14 +171,17 @@ class OpenVoiceSpeaker:
         self.stop()
 
         def _run() -> None:
+            self._loading.set()
             try:
                 pcm, sr = self.synthesize(text)
                 _log.info("ov synth ok: %d samples @ %d Hz", len(pcm), sr)
+                self._loading.clear()
                 self._speaking.set()
                 self.player.play(pcm, sr, block=True)
             except Exception:
                 _log.exception("openvoice say() failed for text=%r", text[:80])
             finally:
+                self._loading.clear()
                 self._speaking.clear()
 
         threading.Thread(target=_run, daemon=True).start()

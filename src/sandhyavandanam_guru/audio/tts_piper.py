@@ -34,9 +34,17 @@ class PiperSpeaker:
         self.player = Player()
         self._worker: threading.Thread | None = None
         self._speaking = threading.Event()
+        self._loading = threading.Event()
 
     def is_speaking(self) -> bool:
         return self._speaking.is_set()
+
+    def state(self) -> str:
+        if self._speaking.is_set():
+            return "speaking"
+        if self._loading.is_set():
+            return "loading"
+        return "idle"
 
     def _ensure_loaded(self) -> None:
         if self._voice_obj is not None:
@@ -69,14 +77,17 @@ class PiperSpeaker:
         self.stop()
 
         def _run() -> None:
+            self._loading.set()
             try:
                 pcm, sr = self.synthesize(text)
                 _log.info("synth ok: %d samples @ %d Hz", len(pcm), sr)
+                self._loading.clear()
                 self._speaking.set()
                 self.player.play(pcm, sr, block=True)
             except Exception:
                 _log.exception("piper say() failed for text=%r", text[:80])
             finally:
+                self._loading.clear()
                 self._speaking.clear()
 
         self._worker = threading.Thread(target=_run, daemon=True)

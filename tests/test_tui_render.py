@@ -38,20 +38,27 @@ def test_palette_distinct() -> None:
 
 def test_status_message_idle() -> None:
     msg = tui.status_message("idle", 0)
-    assert "idle" in msg
+    assert "IDLE" in msg
     assert "r replay" in msg
 
 
 def test_status_message_speaking_uses_wave_frames() -> None:
     msg = tui.status_message("speaking", 0)
-    assert "guru is speaking" in msg
+    assert "GURU IS SPEAKING" in msg
     assert any(ch in msg for ch in "▁▂▃▄▅▆▇█")
 
 
 def test_status_message_listening_uses_pulse_frames() -> None:
     msg = tui.status_message("listening", 0)
-    assert "now speak" in msg
+    assert "YOUR TURN" in msg
     assert any(p in msg for p in tui.StatusBar.PULSE_FRAMES)
+
+
+def test_status_message_loading_shows_spinner_and_hint() -> None:
+    msg = tui.status_message("loading", 3)
+    assert "WARMING UP" in msg
+    assert any(s in msg for s in tui.StatusBar.SPINNER_FRAMES)
+    assert "tts.log" in msg
 
 
 def test_status_message_frame_cycles_safely() -> None:

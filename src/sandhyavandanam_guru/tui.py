@@ -15,6 +15,7 @@ class Speaker(Protocol):
     def say(self, text: str) -> None: ...
     def stop(self) -> None: ...
     def is_speaking(self) -> bool: ...
+    def state(self) -> str: ...  # "idle" | "loading" | "speaking" | "listening"
 
 
 class StatusBar(Static):
@@ -25,17 +26,18 @@ class StatusBar(Static):
     """
 
     WAVE_FRAMES = [
-        "▁▂▃▄▅▆▇█▇▆▅▄▃▂",
-        "▂▃▄▅▆▇█▇▆▅▄▃▂▁",
-        "▃▄▅▆▇█▇▆▅▄▃▂▁▂",
-        "▄▅▆▇█▇▆▅▄▃▂▁▂▃",
-        "▅▆▇█▇▆▅▄▃▂▁▂▃▄",
-        "▆▇█▇▆▅▄▃▂▁▂▃▄▅",
-        "▇█▇▆▅▄▃▂▁▂▃▄▅▆",
-        "█▇▆▅▄▃▂▁▂▃▄▅▆▇",
+        "▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇█▇▆▅▄▃▂",
+        "▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇█▇▆▅▄▃▂▁",
+        "▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂",
+        "▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃",
+        "▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄",
+        "▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅",
+        "▇█▇▆▅▄▃▂▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆",
+        "█▇▆▅▄▃▂▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇",
     ]
-    PULSE_FRAMES = ["●○○", "○●○", "○○●", "○●○"]
-    VALID_STATES = {"idle", "speaking", "listening"}
+    PULSE_FRAMES = ["●○○○", "○●○○", "○○●○", "○○○●", "○○●○", "○●○○"]
+    SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    VALID_STATES = {"idle", "speaking", "listening", "loading"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -64,20 +66,28 @@ def status_message(state: str, frame: int) -> str:
     if state == "speaking":
         wave = StatusBar.WAVE_FRAMES[frame % len(StatusBar.WAVE_FRAMES)]
         return (
-            f"[bold green]◉[/] [green]guru is speaking[/]  "
-            f"[yellow]{wave}[/]   "
-            f"[dim]s · silence    r · replay[/]"
+            f"\n[bold green on grey15]  ◉  GURU IS SPEAKING  [/]"
+            f"   [bold yellow]{wave}[/]\n"
+            f"  [dim]press[/] [bold]s[/] [dim]to silence    press[/] [bold]r[/] [dim]to replay[/]"
         )
     if state == "listening":
         pulse = StatusBar.PULSE_FRAMES[frame % len(StatusBar.PULSE_FRAMES)]
         return (
-            f"[bold cyan]🎤[/] [cyan]now speak the mantra[/]  "
-            f"[yellow]{pulse}[/]   "
-            f"[dim]space when done[/]"
+            f"\n[bold black on cyan]  🎤  YOUR TURN — RECITE THE MANTRA  [/]"
+            f"   [bold yellow]{pulse}[/]\n"
+            f"  [dim]press[/] [bold]space[/] [dim]when you're done[/]"
+        )
+    if state == "loading":
+        spin = StatusBar.SPINNER_FRAMES[frame % len(StatusBar.SPINNER_FRAMES)]
+        return (
+            f"\n[bold black on yellow]  {spin}  GURU IS WARMING UP  [/]"
+            f"   [yellow]first run may download model files (~500 MB)[/]\n"
+            f"  [dim]tail ~/.local/share/sandhyavandanam_guru/tts.log to watch progress[/]"
         )
     return (
-        "[dim]○ idle[/]   "
-        "[dim]→ next   ← prev   r replay   s silence   q quit[/]"
+        "\n[bold black on white]  ○  IDLE  [/]"
+        "   [dim]→ next   ← prev   r replay   s silence   q quit[/]\n"
+        "  [dim]waiting for you to advance[/]"
     )
 
 
@@ -159,7 +169,7 @@ class GuruApp(App):
     #step_header { height: auto; padding-bottom: 1; border-bottom: solid grey; }
     #cols { height: 1fr; padding-top: 1; }
     #sa, #en { width: 1fr; padding: 1 2; border: round grey; }
-    #status { height: 1; padding: 0 2; background: $boost; color: $text; }
+    #status { height: 4; padding: 0 2; border-top: heavy $accent; }
     """
     BINDINGS = [
         Binding("right,space,n", "next_step", "Next"),
@@ -205,11 +215,17 @@ class GuruApp(App):
 
     def _tick_status(self) -> None:
         bar = self.query_one("#status", StatusBar)
-        if self.speaker is not None and self.speaker.is_speaking():
-            bar.set_state("speaking")
+        state = "idle"
+        if self.speaker is not None:
+            # Prefer the richer state() method; fall back to is_speaking() for
+            # older speaker implementations.
+            if hasattr(self.speaker, "state"):
+                state = self.speaker.state()
+            elif self.speaker.is_speaking():
+                state = "speaking"
+        bar.set_state(state)
+        if state != "idle":
             bar.tick()
-        else:
-            bar.set_state("idle")
 
     def _coaching_line(self, step: Step) -> str:
         if self.coaching is None:

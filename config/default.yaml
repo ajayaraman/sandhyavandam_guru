@@ -48,6 +48,14 @@ tts:
   melotts:
     language: EN_Default
     speed: 1.0
+  # F5-TTS: flow-matching DiT that clones full prosody + timbre (cadence,
+  # pitch contour, breathiness — not just spectral envelope like OpenVoice).
+  # Requires a clean reference clip AND its transcript. Use
+  # scripts/record_clone_ref.py to make one; the sidecar .txt is auto-loaded.
+  f5:
+    model: F5TTS_v1_Base
+    clone_ref: null          # path; null = eval/recordings/clone_ref_en.wav if it exists
+    clone_ref_text: null     # auto-loaded from <clone_ref>.txt if not given
 
 # Recognition + advance thresholds (Phase 4).
 thresholds:

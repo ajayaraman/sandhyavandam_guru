@@ -252,6 +252,26 @@ def test_openvoice_say_end_to_end_through_real_worker(pcm_recorder) -> None:
     _wait_until(lambda: s.state() == "idle", timeout=10)
 
 
+def test_f5_say_end_to_end_through_real_worker(pcm_recorder) -> None:
+    """F5-TTS clones full prosody. Asserts daemon-thread synth produces real audio."""
+    try:
+        from sandhyavandanam_guru.audio.tts_f5 import F5Speaker
+    except ImportError:
+        pytest.skip("f5-tts not installed")
+    ref = EVAL_DIR / "clone_ref_en.wav"
+    txt = EVAL_DIR / "clone_ref_en.txt"
+    if not (ref.exists() and txt.exists()):
+        pytest.skip("English reference clip + transcript not present")
+    s = F5Speaker(ref_wav=ref, ref_text=txt.read_text().strip(), device="cpu")
+    s.say("Begin by sitting and facing east.")
+    _wait_until(lambda: bool(pcm_recorder.played), timeout=600)
+    pcm, sr = pcm_recorder.played[-1]
+    stats = _amplitude_stats(pcm)
+    assert sr >= 16000
+    assert stats["len"] > sr // 2  # ≥0.5 s
+    assert stats["rms"] > 500
+
+
 def test_openvoice_india_clone_picks_correct_speaker_and_embedding(pcm_recorder) -> None:
     """Specific to the EN_INDIA path that was silently mis-mapped before.
 

@@ -54,12 +54,20 @@ class MeloTTSSettings(BaseModel):
     speed: float = Field(gt=0.3, le=2.0, default=1.0)
 
 
+class F5TTSSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    model: str = "F5TTS_v1_Base"
+    clone_ref: str | None = None
+    clone_ref_text: str | None = None  # transcript of clone_ref
+
+
 class TTSSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    backend: Literal["piper", "openvoice", "melotts"]
+    backend: Literal["piper", "openvoice", "melotts", "f5"]
     piper: PiperSettings
     openvoice: OpenVoiceSettings
     melotts: MeloTTSSettings = MeloTTSSettings()
+    f5: F5TTSSettings = F5TTSSettings()
 
 
 class Thresholds(BaseModel):

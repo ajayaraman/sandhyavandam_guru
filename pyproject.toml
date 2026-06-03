@@ -30,6 +30,13 @@ clone = [
     "sounddevice>=0.4",
     "numpy>=1.26",
 ]
+clone-f5 = [
+    "f5-tts>=0.6",
+    "torchcodec>=0.13",
+    "soundfile>=0.12",
+    "sounddevice>=0.4",
+    "numpy>=1.26",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",

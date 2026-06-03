@@ -92,6 +92,33 @@ def _build_speaker(s: Settings):
             return OpenVoiceSpeaker(ref_wav=ref_wav, language=s.tts.openvoice.language)
         except Exception as e:
             print(f"[sgr] OpenVoice unavailable ({e}); falling back to Piper.", file=sys.stderr)
+    if backend == "f5":
+        try:
+            from .audio.tts_f5 import F5Speaker
+
+            ref_wav = _resolve_clone_ref(s.tts.f5.clone_ref)
+            ref_text = s.tts.f5.clone_ref_text
+            if not ref_text:
+                # Look for a sidecar transcript next to the wav.
+                sidecar = ref_wav.with_suffix(".txt")
+                if sidecar.exists():
+                    ref_text = sidecar.read_text().strip()
+            if not ref_text:
+                raise SystemExit(
+                    f"F5-TTS needs the transcript of the reference clip. "
+                    f"Add a sidecar {ref_wav.with_suffix('.txt')} or set "
+                    f"tts.f5.clone_ref_text in your config."
+                )
+            print(
+                f"[sgr] F5-TTS — ref={ref_wav.name} ({len(ref_text.split())} words) "
+                f"(first run downloads ~1 GB and warms MPS; please wait)",
+                file=sys.stderr,
+            )
+            return F5Speaker(ref_wav=ref_wav, ref_text=ref_text, model=s.tts.f5.model)
+        except SystemExit:
+            raise
+        except Exception as e:
+            print(f"[sgr] F5-TTS unavailable ({e}); falling back to Piper.", file=sys.stderr)
     if backend == "melotts":
         try:
             from .audio.tts_melotts import MeloSpeaker
@@ -119,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--coaching", default=None, help="Override coaching YAML path.")
     p.add_argument(
         "--voice",
-        choices=["piper", "openvoice", "melotts"],
+        choices=["piper", "openvoice", "melotts", "f5"],
         default=None,
         help="Override tts.backend.",
     )

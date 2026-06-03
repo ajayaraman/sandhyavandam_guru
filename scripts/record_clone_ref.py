@@ -111,7 +111,12 @@ def record(out_path: Path, prompt_text: str) -> None:
         wf.setframerate(SAMPLE_RATE)
         wf.writeframes(buf[: pos["n"]].tobytes())
 
+    # Sidecar transcript — required by F5-TTS to know what's in the reference.
+    txt_path = out_path.with_suffix(".txt")
+    txt_path.write_text(prompt_text.strip() + "\n")
+
     print(f"✓ saved {out_path}  ({duration:.1f} s)")
+    print(f"✓ saved {txt_path}  (transcript for F5-TTS)")
     print()
     print("Point the app at it:")
     print(f"  uv run sgr --voice openvoice --clone-ref {out_path.relative_to(config.PROJECT_ROOT)}")

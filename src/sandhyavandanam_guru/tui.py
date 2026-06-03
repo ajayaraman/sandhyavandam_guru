@@ -7,6 +7,8 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Footer, Header, Static
 
+from . import config as _cfg
+from .audio.chanter import Chanter
 from .coaching_loader import Coaching
 from .ritual_loader import Ritual, Step
 
@@ -37,7 +39,7 @@ class StatusBar(Static):
     ]
     PULSE_FRAMES = ["●○○○", "○●○○", "○○●○", "○○○●", "○○●○", "○●○○"]
     SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-    VALID_STATES = {"idle", "speaking", "listening", "loading"}
+    VALID_STATES = {"idle", "speaking", "listening", "loading", "chanting"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -76,6 +78,13 @@ def status_message(state: str, frame: int) -> str:
             f"\n[bold black on cyan]  🎤  YOUR TURN — RECITE THE MANTRA  [/]"
             f"   [bold yellow]{pulse}[/]\n"
             f"  [dim]press[/] [bold]space[/] [dim]when you're done[/]"
+        )
+    if state == "chanting":
+        wave = StatusBar.WAVE_FRAMES[frame % len(StatusBar.WAVE_FRAMES)]
+        return (
+            f"\n[bold black on #FF9933]  ॐ  GURU IS CHANTING  [/]"
+            f"   [bold yellow]{wave}[/]\n"
+            f"  [dim]press[/] [bold]s[/] [dim]to silence    press[/] [bold]m[/] [dim]to replay mantra[/]"
         )
     if state == "loading":
         spin = StatusBar.SPINNER_FRAMES[frame % len(StatusBar.SPINNER_FRAMES)]
@@ -177,6 +186,7 @@ class GuruApp(App):
         Binding("home", "first_step", "First"),
         Binding("end", "last_step", "Last"),
         Binding("r", "replay", "Replay"),
+        Binding("m", "replay_mantra", "Mantra"),
         Binding("s", "silence", "Silence"),
         Binding("q", "quit", "Quit"),
     ]
@@ -186,12 +196,18 @@ class GuruApp(App):
         ritual: Ritual,
         coaching: Coaching | None = None,
         speaker: Speaker | None = None,
+        chanter: Chanter | None = None,
     ):
         super().__init__()
         self.ritual = ritual
         self.coaching = coaching
         self.speaker = speaker
+        self.chanter = chanter if chanter is not None else Chanter(
+            _cfg.PROJECT_ROOT / "assets" / "mantras"
+        )
         self.index = 0
+        self._pending_chant: str | None = None
+        self._prev_speaker_state = "idle"
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
@@ -215,14 +231,27 @@ class GuruApp(App):
 
     def _tick_status(self) -> None:
         bar = self.query_one("#status", StatusBar)
-        state = "idle"
+        speaker_state = "idle"
         if self.speaker is not None:
-            # Prefer the richer state() method; fall back to is_speaking() for
-            # older speaker implementations.
             if hasattr(self.speaker, "state"):
-                state = self.speaker.state()
+                speaker_state = self.speaker.state()
             elif self.speaker.is_speaking():
-                state = "speaking"
+                speaker_state = "speaking"
+
+        # If speaker just finished and a mantra is queued for this step, chant it.
+        if (
+            self._prev_speaker_state in ("speaking", "loading")
+            and speaker_state == "idle"
+            and self._pending_chant is not None
+        ):
+            mid = self._pending_chant
+            self._pending_chant = None
+            self.chanter.chant(mid)
+        self._prev_speaker_state = speaker_state
+
+        state = speaker_state
+        if state == "idle" and self.chanter.is_chanting():
+            state = "chanting"
         bar.set_state(state)
         if state != "idle":
             bar.tick()
@@ -240,8 +269,19 @@ class GuruApp(App):
         self.query_one("#sa", SanskritPanel).render_sa(step)
         self.query_one("#en", EnglishPanel).render_en(step, line)
         self.query_one("#sidebar", SidebarView).render_outline(self.ritual, self.index)
+        # Stop any in-flight chant from the previous step.
+        self.chanter.stop()
+        self._pending_chant = None
         if speak and self.speaker and line:
             self.speaker.say(line)
+            # Always demo the mantra once when we have a wav — even for mental-japa
+            # steps, the student needs to hear correct pronunciation before chanting
+            # internally. `chant_aloud` describes the student's recitation, not the
+            # guru's demonstration.
+            if self.chanter.has(step.mantra_id):
+                self._pending_chant = step.mantra_id
+        elif speak and self.chanter.has(step.mantra_id):
+            self.chanter.chant(step.mantra_id)
 
     def action_next_step(self) -> None:
         if self.index < len(self.ritual.steps) - 1:
@@ -266,6 +306,16 @@ class GuruApp(App):
             step = self.ritual.steps[self.index]
             self.speaker.say(self._coaching_line(step))
 
+    def action_replay_mantra(self) -> None:
+        step = self.ritual.steps[self.index]
+        if self.chanter.has(step.mantra_id):
+            self._pending_chant = None
+            if self.speaker:
+                self.speaker.stop()
+            self.chanter.chant(step.mantra_id)
+
     def action_silence(self) -> None:
         if self.speaker:
             self.speaker.stop()
+        self._pending_chant = None
+        self.chanter.stop()

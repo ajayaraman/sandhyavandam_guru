@@ -45,6 +45,7 @@ steps:
       hold breath, chanting once more; exhale through right nostril, chanting once more.
       Three rounds inhale-hold-exhale = one praaNaayaama. Do at least three.
     mantra_id: m02_praanaayaama
+    chant_aloud: false
     mantra_text: |
       om bhoohu
       om bhuvaha
@@ -190,6 +191,7 @@ steps:
     posture: sit, close the eyes
     physical_action: Sit, close the eyes, and mentally chant.
     mantra_id: m10_asavaadityo
+    chant_aloud: false
     mantra_text: asavaadityo brahma brahmai vaham asmi
     translation: That sun is Brahman. I am verily that Brahman.
     repeat_count: 1
@@ -321,6 +323,7 @@ steps:
       Cover the joined hands with the angavastra or a piece of cloth.
       Chant the Gayatri mantra mentally 108 times. No movement of the lips.
     mantra_id: m16_gayatri
+    chant_aloud: false
     mantra_text: |
       om bhoorbhuvasvah tatsaviturvareNyam
       bhargodevasya dheemahi dheeyo yonah prachodayaat

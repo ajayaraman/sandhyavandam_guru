@@ -20,6 +20,8 @@ class Step(BaseModel):
     translation: str
     repeat_count: int = 1
     advance_rule: AdvanceRule = "user_confirm"
+    chant_aloud: bool = True  # describes the STUDENT's recitation. false = mental
+    # japa; guru still demonstrates the mantra audibly but the student stays silent.
 
 
 class Ritual(BaseModel):

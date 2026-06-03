@@ -29,6 +29,27 @@ os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 os.environ.setdefault("TQDM_DISABLE", "1")
 os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 
+
+def _install_threadsafe_tqdm_lock() -> None:
+    """Replace tqdm's multiprocessing lock with a threading.Lock.
+
+    tqdm.std.tqdm.__new__ unconditionally calls get_lock() which lazily creates
+    a multiprocessing.RLock. From inside a daemon thread (our TUI say() worker)
+    the resource-tracker spawn fails with 'bad value(s) in fds_to_keep'.
+    TQDM_DISABLE doesn't help because the lock is created before the disable
+    check. We pre-populate cls._lock with a threading.Lock so get_lock() finds
+    one already there and never touches multiprocessing.
+    """
+    try:
+        import tqdm.std as _tqdm_std  # type: ignore[import-not-found]
+    except ImportError:
+        return
+    if not hasattr(_tqdm_std.tqdm, "_lock"):
+        _tqdm_std.tqdm._lock = threading.RLock()  # type: ignore[attr-defined]
+
+
+_install_threadsafe_tqdm_lock()
+
 if TYPE_CHECKING:
     import numpy as np
 

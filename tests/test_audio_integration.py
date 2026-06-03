@@ -192,6 +192,66 @@ def test_openvoice_synthesize_produces_real_audio_in_user_timbre(pcm_recorder) -
     assert stats["rms"] > 500, f"OpenVoice PCM looks silent: {stats}"
 
 
+def test_openvoice_synth_works_from_daemon_thread() -> None:
+    """The bug only manifests off the main thread.
+
+    Production say() runs synthesize() inside a `threading.Thread(daemon=True)`.
+    tqdm's get_lock() lazily creates a multiprocessing.RLock; from a daemon
+    thread the resource-tracker fork raises "bad value(s) in fds_to_keep".
+    Calling synthesize() directly from the test's main thread does NOT
+    exercise this path — that's how an earlier "passing" test let the bug
+    ship. Run it from a daemon thread instead.
+    """
+    try:
+        from sandhyavandanam_guru.audio.tts_openvoice import OpenVoiceSpeaker
+    except ImportError:
+        pytest.skip("openvoice/melo not installed")
+
+    s = OpenVoiceSpeaker(ref_wav=_default_ref_wav(), language="EN_INDIA", device="cpu")
+    result: dict[str, Any] = {}
+
+    def worker() -> None:
+        try:
+            pcm, sr = s.synthesize("Begin by sitting and facing east.")
+            result["pcm"] = pcm
+            result["sr"] = sr
+        except BaseException as e:
+            result["err"] = repr(e)
+
+    t = threading.Thread(target=worker, daemon=True)
+    t.start()
+    t.join(timeout=180)
+    assert not t.is_alive(), "synth worker hung"
+    assert "err" not in result, f"daemon-thread synth raised: {result['err']}"
+    assert "pcm" in result, "daemon-thread synth produced no output"
+    stats = _amplitude_stats(result["pcm"])
+    assert stats["rms"] > 500, f"daemon-thread synth was silent: {stats}"
+
+
+def test_openvoice_say_end_to_end_through_real_worker(pcm_recorder) -> None:
+    """Use the *public* say() API exactly the way the TUI does.
+
+    say() spawns its own daemon thread and pumps audio through the player.
+    This is the same code path the user hits when they press 'r' in the TUI;
+    a passing test here proves the app will actually speak.
+    """
+    try:
+        from sandhyavandanam_guru.audio.tts_openvoice import OpenVoiceSpeaker
+    except ImportError:
+        pytest.skip("openvoice/melo not installed")
+
+    s = OpenVoiceSpeaker(ref_wav=_default_ref_wav(), language="EN_INDIA", device="cpu")
+    s.say("Hello. Begin by sitting and facing east.")
+    _wait_until(lambda: bool(pcm_recorder.played), timeout=240)
+    pcm, sr = pcm_recorder.played[-1]
+    stats = _amplitude_stats(pcm)
+    assert sr >= 16000
+    assert stats["len"] > sr  # ≥1 s of audio
+    assert stats["rms"] > 500, f"say() produced silent PCM: {stats}"
+    # Speaker should be back to idle after playback completes.
+    _wait_until(lambda: s.state() == "idle", timeout=10)
+
+
 def test_openvoice_india_clone_picks_correct_speaker_and_embedding(pcm_recorder) -> None:
     """Specific to the EN_INDIA path that was silently mis-mapped before.
 

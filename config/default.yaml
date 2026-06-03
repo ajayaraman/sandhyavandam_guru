@@ -1,0 +1,48 @@
+# Sandhyavandanam Guru — default configuration.
+# All tunable knobs live here. Override by either:
+#   1. dropping a partial YAML at ~/.config/sandhyavandanam_guru/config.yaml
+#   2. passing `sgr --config <path>` to load an arbitrary override file
+# Overrides are deep-merged on top of this file, so partial configs are fine.
+# The schema is enforced by src/sandhyavandanam_guru/settings.py (Pydantic v2).
+
+ritual:
+  pratah: ritual/pratah_rigveda.yaml
+  coaching_en: ritual/coaching_en.yaml
+
+# Coach LLM — used in Phase 5 for empathy/tone phrasing, and as the audio LLM
+# below for STT. Ollama exposes an OpenAI-compatible endpoint at /v1.
+coach_llm:
+  base_url: http://localhost:11434/v1
+  model: gemma4:e4b
+  timeout_s: 8.0
+
+# Student STT (Phase 4). Primary path: Gemma 4 E4B audio via Ollama (winner of
+# the Phase 0.5 shootout: religious-error recall 1.00, median CER 0.167).
+# Fallback for short utterances ("next", barge-in): MLX Whisper.
+stt:
+  primary_model: gemma4:e4b              # served by coach_llm.base_url
+  fallback_whisper: mlx-community/whisper-large-v3-mlx
+  max_clip_s: 25.0                       # Gemma 4 audio caps at 30 s; chunk to 25 s
+  num_ctx: 8192                          # Ollama default 2048 silently truncates
+  retry_on_empty: 1                      # ollama/ollama#15333 GGML crash workaround
+
+# Guru voice (Phase 2).
+#   backend = piper      : tiny generic voice, instant, no clone
+#   backend = openvoice  : OpenVoice v2 — clone your timbre over MeloTTS-EN-India
+tts:
+  backend: openvoice
+  piper:
+    voice: en_US-lessac-medium
+  openvoice:
+    language: EN_INDIA
+    # Path is project-relative; null means auto-pick the shortest clean clip from
+    # eval/recordings/manifest_clean.json. Reference language doesn't matter —
+    # OpenVoice clones timbre only, accent comes from MeloTTS-EN-India.
+    clone_ref: null
+
+# Recognition + advance thresholds (Phase 4).
+thresholds:
+  similarity_auto_advance: 0.85
+  similarity_nudge: 0.60
+  recitation_silence_s: 1.4              # raised for mantras with internal pauses
+  default_silence_s: 0.5

@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 
 from sandhyavandanam_guru import config
+from sandhyavandanam_guru.settings import load_settings
 
 
 def check(label: str, ok: bool, detail: str = "") -> bool:
@@ -31,17 +32,20 @@ def main() -> int:
         str(config.RITUAL_DIR),
     )
 
-    lm_url = f"{config.LM_STUDIO_BASE_URL}/models"
-    try:
-        with urllib.request.urlopen(lm_url, timeout=2) as r:
-            lm_ok = r.status == 200
-            lm_detail = lm_url
-    except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
-        lm_ok = False
-        lm_detail = f"{lm_url}: {e}"
-    check("LM Studio reachable (optional)", lm_ok, lm_detail)
+    settings = load_settings()
+    all_ok &= check("Settings YAML valid", True, "config/default.yaml")
 
-    check("`lms` CLI on PATH (optional)", shutil.which("lms") is not None)
+    coach_url = f"{settings.coach_llm.base_url}/models"
+    try:
+        with urllib.request.urlopen(coach_url, timeout=2) as r:
+            coach_ok = r.status == 200
+            coach_detail = coach_url
+    except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+        coach_ok = False
+        coach_detail = f"{coach_url}: {e}"
+    check(f"Coach LLM reachable ({settings.coach_llm.model})", coach_ok, coach_detail)
+
+    check("`ollama` CLI on PATH (optional)", shutil.which("ollama") is not None)
     check(
         f"Mantra bank present (optional) — {config.MANTRA_DIR}",
         config.MANTRA_DIR.exists() and any(config.MANTRA_DIR.glob("*.wav")),

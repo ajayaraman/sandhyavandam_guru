@@ -1,15 +1,22 @@
 from __future__ import annotations
 
-import io
+import logging
 import threading
-import wave
 from typing import TYPE_CHECKING
 
+from .. import config as _cfg
 from .player import Player
 from .voices import ensure_piper_voice
 
 if TYPE_CHECKING:
     import numpy as np
+
+_log = logging.getLogger("sgr.tts")
+_cfg.USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
+_log_handler = logging.FileHandler(_cfg.USER_DATA_DIR / "tts.log")
+_log_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+_log.addHandler(_log_handler)
+_log.setLevel(logging.INFO)
 
 
 class PiperSpeaker:
@@ -26,6 +33,10 @@ class PiperSpeaker:
         self._load_lock = threading.Lock()
         self.player = Player()
         self._worker: threading.Thread | None = None
+        self._speaking = threading.Event()
+
+    def is_speaking(self) -> bool:
+        return self._speaking.is_set()
 
     def _ensure_loaded(self) -> None:
         if self._voice_obj is not None:
@@ -42,15 +53,13 @@ class PiperSpeaker:
         import numpy as np
 
         self._ensure_loaded()
-        buf = io.BytesIO()
-        with wave.open(buf, "wb") as wf:
-            self._voice_obj.synthesize(text, wf)  # type: ignore[union-attr]
-        buf.seek(0)
-        with wave.open(buf, "rb") as wf:
-            sr = wf.getframerate()
-            raw = wf.readframes(wf.getnframes())
-        pcm = np.frombuffer(raw, dtype=np.int16)
-        return pcm, sr
+        voice = self._voice_obj
+        # piper-tts >=1.4 returns an iterable of AudioChunk (one per sentence).
+        arrays = [chunk.audio_int16_array for chunk in voice.synthesize(text)]  # type: ignore[union-attr]
+        if not arrays:
+            return np.zeros(0, dtype=np.int16), voice.config.sample_rate  # type: ignore[union-attr]
+        pcm = np.concatenate(arrays)
+        return pcm, voice.config.sample_rate  # type: ignore[union-attr]
 
     def say(self, text: str) -> None:
         text = (text or "").strip()
@@ -62,11 +71,13 @@ class PiperSpeaker:
         def _run() -> None:
             try:
                 pcm, sr = self.synthesize(text)
-                self.player.play(pcm, sr)
+                _log.info("synth ok: %d samples @ %d Hz", len(pcm), sr)
+                self._speaking.set()
+                self.player.play(pcm, sr, block=True)
             except Exception:
-                # Silently degrade: a missing voice file or audio device should not
-                # crash the TUI. The visual coaching line is still shown.
-                pass
+                _log.exception("piper say() failed for text=%r", text[:80])
+            finally:
+                self._speaking.clear()
 
         self._worker = threading.Thread(target=_run, daemon=True)
         self._worker.start()

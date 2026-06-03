@@ -14,6 +14,64 @@ from .ritual_loader import Ritual, Step
 class Speaker(Protocol):
     def say(self, text: str) -> None: ...
     def stop(self) -> None: ...
+    def is_speaking(self) -> bool: ...
+
+
+class StatusBar(Static):
+    """Live indicator for guru-speaking / student-listening states.
+
+    Frames cycle to give the impression of an animated waveform — mirrors what
+    voice-conversation apps show during TTS playback.
+    """
+
+    WAVE_FRAMES = [
+        "▁▂▃▄▅▆▇█▇▆▅▄▃▂",
+        "▂▃▄▅▆▇█▇▆▅▄▃▂▁",
+        "▃▄▅▆▇█▇▆▅▄▃▂▁▂",
+        "▄▅▆▇█▇▆▅▄▃▂▁▂▃",
+        "▅▆▇█▇▆▅▄▃▂▁▂▃▄",
+        "▆▇█▇▆▅▄▃▂▁▂▃▄▅",
+        "▇█▇▆▅▄▃▂▁▂▃▄▅▆",
+        "█▇▆▅▄▃▂▁▂▃▄▅▆▇",
+    ]
+    PULSE_FRAMES = ["●○○", "○●○", "○○●", "○●○"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._state = "idle"
+        self._frame = 0
+        self.render_now()
+
+    def set_state(self, state: str) -> None:
+        if state != self._state:
+            self._state = state
+            self._frame = 0
+        self.render_now()
+
+    def tick(self) -> None:
+        self._frame += 1
+        self.render_now()
+
+    def render_now(self) -> None:
+        if self._state == "speaking":
+            wave = self.WAVE_FRAMES[self._frame % len(self.WAVE_FRAMES)]
+            self.update(
+                f"[bold green]◉[/] [green]guru is speaking[/]  "
+                f"[yellow]{wave}[/]   "
+                f"[dim]s · silence    r · replay[/]"
+            )
+        elif self._state == "listening":
+            pulse = self.PULSE_FRAMES[self._frame % len(self.PULSE_FRAMES)]
+            self.update(
+                f"[bold cyan]🎤[/] [cyan]now speak the mantra[/]  "
+                f"[yellow]{pulse}[/]   "
+                f"[dim]space when done[/]"
+            )
+        else:
+            self.update(
+                "[dim]○ idle[/]   "
+                "[dim]→ next   ← prev   r replay   s silence   q quit[/]"
+            )
 
 
 class StepHeader(Static):
@@ -25,25 +83,45 @@ class StepHeader(Static):
         )
 
 
+# Palette — drawn from Vedic ritual associations:
+#   saffron (#FF9933)   sacred chant, the mantra itself
+#   gold    (#D4A017)   the deity / sacred name
+#   kumkum  (#C23B22)   physical action / vermillion mark
+#   tulsi   (#558B2F)   posture / the leaf-bearing body
+#   cream   (#F5E6C8)   meaning / sandalwood paste
+#   ash     (#9E9E9E)   subdued labels
+SAFFRON = "#FF9933"
+GOLD = "#D4A017"
+KUMKUM = "#C23B22"
+TULSI = "#558B2F"
+CREAM = "#F5E6C8"
+ASH = "#9E9E9E"
+
+
 class SanskritPanel(Static):
     def render_sa(self, step: Step) -> None:
         self.update(
-            f"[bold yellow]संस्कृत · sanskrit[/]\n\n"
-            f"[bold magenta]{step.name_sa}[/]\n\n"
-            f"[bold]Mantra[/]\n[white]{step.mantra_text.strip()}[/]"
+            f"[bold {GOLD}]संस्कृत · sanskrit[/]\n\n"
+            f"[bold {GOLD}]{step.name_sa}[/]\n\n"
+            f"[bold {SAFFRON}]मन्त्र · mantra[/]\n"
+            f"[{SAFFRON}]{step.mantra_text.strip()}[/]"
         )
 
 
 class EnglishPanel(Static):
     def render_en(self, step: Step, coaching_line: str) -> None:
-        guru = f"[bold green]Guru[/]\n{coaching_line}\n\n" if coaching_line else ""
+        guru = (
+            f"[bold {TULSI}]◆ Guru[/]\n[{CREAM}]{coaching_line}[/]\n\n"
+            if coaching_line
+            else ""
+        )
         self.update(
-            f"[bold yellow]english[/]\n\n"
+            f"[bold {ASH}]english[/]\n\n"
             f"{guru}"
-            f"[bold]{step.name_en}[/]\n\n"
-            f"[bold]Meaning[/]\n{step.translation}\n\n"
-            f"[bold]Posture[/]\n{step.posture}\n\n"
-            f"[bold]What to do[/]\n{step.physical_action.strip()}"
+            f"[bold {GOLD}]{step.name_en}[/]\n\n"
+            f"[bold {ASH}]meaning[/]\n[{CREAM}]{step.translation}[/]\n\n"
+            f"[bold {TULSI}]posture[/]\n[{CREAM}]{step.posture}[/]\n\n"
+            f"[bold {KUMKUM}]action[/]\n[{KUMKUM}]{step.physical_action.strip()}[/]"
         )
 
 
@@ -66,6 +144,7 @@ class GuruApp(App):
     #step_header { height: auto; padding-bottom: 1; border-bottom: solid grey; }
     #cols { height: 1fr; padding-top: 1; }
     #sa, #en { width: 1fr; padding: 1 2; border: round grey; }
+    #status { height: 1; padding: 0 2; background: $boost; color: $text; }
     """
     BINDINGS = [
         Binding("right,space,n", "next_step", "Next"),
@@ -98,12 +177,24 @@ class GuruApp(App):
                 with Horizontal(id="cols"):
                     yield SanskritPanel(id="sa")
                     yield EnglishPanel(id="en")
+                yield StatusBar(id="status")
         yield Footer()
 
     def on_mount(self) -> None:
         self.title = "Sandhyavandanam Guru"
         self.sub_title = f"{self.ritual.sandhya_kind} sandhya"
         self._refresh(speak=True)
+        # 8 Hz status refresh — fast enough for a fluid waveform, cheap enough
+        # for the terminal (one Static update per tick).
+        self.set_interval(1 / 8, self._tick_status)
+
+    def _tick_status(self) -> None:
+        bar = self.query_one("#status", StatusBar)
+        if self.speaker is not None and self.speaker.is_speaking():
+            bar.set_state("speaking")
+            bar.tick()
+        else:
+            bar.set_state("idle")
 
     def _coaching_line(self, step: Step) -> str:
         if self.coaching is None:

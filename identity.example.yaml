@@ -1,0 +1,22 @@
+# Personal lineage for step 19 — samaṣṭi abhivādanam.
+#
+#   1. Copy this file:   cp identity.example.yaml identity.yaml
+#   2. Fill in your details. identity.yaml is gitignored — your data stays local.
+#   3. `sgr` auto-picks up ./identity.yaml first, then
+#      ~/.config/sandhyavandanam_guru/identity.yaml.
+#
+# At step 19 the coach will surface this so you can chant your abhivadana correctly:
+#   "...{pravara}-pravara-anvita...{gotra}-gotraḥ...{sutra}-sūtraḥ...
+#    {veda}-adhyāyī...{name}-śarmaṇām aham asmi bhoḥ."
+#
+# Every field is required.
+
+name: <your_shaarmaN_name>            # eg. krishna, raama, venkateshwara
+gotra: <your_gotra>                   # eg. bharadwaaja, kaashyapa, vasishtha
+pravara:                              # 1–5 rishis; ordering matters
+  - <pravara_rishi_1>
+  - <pravara_rishi_2>
+  - <pravara_rishi_3>
+sutra: aashvalaayana                  # Rigvedins typically aashvalaayana
+veda: rigveda                         # rigveda | yajurveda | saamaveda | atharvaveda
+veda_shaakha: shaakala                # for Rigveda: shaakala

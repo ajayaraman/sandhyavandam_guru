@@ -174,7 +174,7 @@ def main() -> int:
                         "'mlx-community/whisper-large-v3-mlx' for mlx.")
     p.add_argument("--gemma-model", default=None,
                    help="Gemma model id served by LM Studio or Ollama "
-                        "(default: from config.LM_STUDIO_MODEL).")
+                        "(default: from config/default.yaml coach_llm.model).")
     p.add_argument("--gemma-base-url", default=None,
                    help="Override OpenAI-compatible base URL for the Gemma server. "
                         "LM Studio: http://localhost:1234/v1 (default). "
@@ -205,9 +205,11 @@ def main() -> int:
         print(f"Loading whisper backend='{args.backend}' model='{whisper_model_id}' (first run downloads ~3 GB)...")
         whisper_backend = WhisperBackend(args.backend, whisper_model_id)
 
+    from sandhyavandanam_guru.settings import load_settings
+    settings = load_settings()
     gemma_client = None
-    gemma_model_name = args.gemma_model or config.LM_STUDIO_MODEL
-    gemma_base_url = args.gemma_base_url or config.LM_STUDIO_BASE_URL
+    gemma_model_name = args.gemma_model or settings.coach_llm.model
+    gemma_base_url = args.gemma_base_url or settings.coach_llm.base_url
     if not args.skip_gemma:
         print(f"Connecting to Gemma server at {gemma_base_url} (model: {gemma_model_name})...")
         from openai import OpenAI

@@ -23,7 +23,31 @@ audio = [
     "openai>=1.40",
     "indic-transliteration>=2.3",
 ]
+clone = [
+    "myshell-openvoice",
+    "melotts",
+    "soundfile>=0.12",
+    "sounddevice>=0.4",
+    "numpy>=1.26",
+]
 dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[tool.uv]
+# OpenVoice upstream pins numpy==1.22 and librosa==0.9.1; these conflict with
+# every other audio dep we use. Override to modern versions — confirmed to work
+# in practice.
+override-dependencies = [
+    "numpy>=1.26",
+    "librosa>=0.10",
+    "scipy>=1.11",
+    "faster-whisper>=1.0",
+    "transformers==4.49.0",
+    "tokenizers>=0.21,<0.22",
+]
+
+[tool.uv.sources]
+myshell-openvoice = { git = "https://github.com/myshell-ai/OpenVoice.git" }
+melotts = { git = "https://github.com/myshell-ai/MeloTTS.git" }
 
 [project.scripts]
 sgr = "sandhyavandanam_guru.cli:main"

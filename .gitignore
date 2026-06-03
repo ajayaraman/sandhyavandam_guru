@@ -221,3 +221,6 @@ __marimo__/
 assets/mantras/*.wav
 eval/recordings/
 uv.lock.bak
+
+# Personal lineage — copied from identity.example.yaml and filled in locally.
+identity.yaml

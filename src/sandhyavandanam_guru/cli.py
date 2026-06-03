@@ -96,7 +96,14 @@ def _build_speaker(s: Settings):
         try:
             from .audio.tts_f5 import F5Speaker
 
-            ref_wav = _resolve_clone_ref(s.tts.f5.clone_ref)
+            # F5 clones full prosody, so an English reference is strongly preferred
+            # over a Sanskrit chant. Default to clone_ref_en.wav when present.
+            f5_ref = s.tts.f5.clone_ref
+            if not f5_ref:
+                default_en = config.PROJECT_ROOT / "eval" / "recordings" / "clone_ref_en.wav"
+                if default_en.exists():
+                    f5_ref = str(default_en.relative_to(config.PROJECT_ROOT))
+            ref_wav = _resolve_clone_ref(f5_ref)
             ref_text = s.tts.f5.clone_ref_text
             if not ref_text:
                 # Look for a sidecar transcript next to the wav.
@@ -114,7 +121,14 @@ def _build_speaker(s: Settings):
                 f"(first run downloads ~1 GB and warms MPS; please wait)",
                 file=sys.stderr,
             )
-            return F5Speaker(ref_wav=ref_wav, ref_text=ref_text, model=s.tts.f5.model)
+            return F5Speaker(
+                ref_wav=ref_wav,
+                ref_text=ref_text,
+                model=s.tts.f5.model,
+                speed=s.tts.f5.speed,
+                nfe_step=s.tts.f5.nfe_step,
+                remove_silence=s.tts.f5.remove_silence,
+            )
         except SystemExit:
             raise
         except Exception as e:

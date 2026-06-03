@@ -59,6 +59,9 @@ class F5TTSSettings(BaseModel):
     model: str = "F5TTS_v1_Base"
     clone_ref: str | None = None
     clone_ref_text: str | None = None  # transcript of clone_ref
+    speed: float = 0.85  # <1.0 = slower, more guru-like pacing
+    nfe_step: int = 16   # diffusion steps; 32=default quality, 16=2x faster, 8=gritty
+    remove_silence: bool = False  # F5 chunking + silence-trim can cause text repetition
 
 
 class TTSSettings(BaseModel):

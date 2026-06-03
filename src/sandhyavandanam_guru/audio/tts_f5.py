@@ -70,16 +70,24 @@ class F5Speaker:
         ref_text: str,
         model: str = "F5TTS_v1_Base",
         device: str | None = None,
+        speed: float = 0.85,
+        nfe_step: int = 16,
+        remove_silence: bool = False,
     ):
         self.ref_wav = str(ref_wav)
         self.ref_text = (ref_text or "").strip()
         self.model_name = model
         self.device = device or _best_device()
+        self.speed = float(speed)
+        self.nfe_step = int(nfe_step)
+        self.remove_silence = bool(remove_silence)
         self._engine = None
         self._load_lock = threading.Lock()
         self.player = Player()
         self._speaking = threading.Event()
         self._loading = threading.Event()
+        self._gen = 0
+        self._gen_lock = threading.Lock()
 
     def state(self) -> str:
         if self._speaking.is_set():
@@ -113,7 +121,9 @@ class F5Speaker:
             gen_text=text,
             file_wave=None,
             file_spec=None,  # note: spec, not spect (changed in upstream f5-tts)
-            remove_silence=True,
+            remove_silence=self.remove_silence,
+            speed=self.speed,
+            nfe_step=self.nfe_step,
         )
         pcm = np.asarray(wav, dtype=np.float32)
         if pcm.ndim > 1:
@@ -125,12 +135,19 @@ class F5Speaker:
         text = (text or "").strip()
         if not text:
             return
+        with self._gen_lock:
+            self._gen += 1
+            my_gen = self._gen
         self.stop()
 
         def _run() -> None:
             self._loading.set()
             try:
                 pcm, sr = self.synthesize(text)
+                with self._gen_lock:
+                    if my_gen != self._gen:
+                        _log.info("f5 synth stale (gen %d != %d); discarding", my_gen, self._gen)
+                        return
                 _log.info("f5 synth ok: %d samples @ %d Hz", len(pcm), sr)
                 self._loading.clear()
                 self._speaking.set()

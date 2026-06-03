@@ -36,7 +36,7 @@ tts:
   # `uv run python scripts/fetch_openvoice.py` (downloads ~1.5 GB once).
   backend: piper
   piper:
-    voice: en_US-lessac-medium
+    voice: en_GB-alan-medium
   openvoice:
     language: EN_INDIA
     # Path is project-relative; null means auto-pick the shortest clean clip from
@@ -54,8 +54,11 @@ tts:
   # scripts/record_clone_ref.py to make one; the sidecar .txt is auto-loaded.
   f5:
     model: F5TTS_v1_Base
-    clone_ref: null          # path; null = eval/recordings/clone_ref_en.wav if it exists
-    clone_ref_text: null     # auto-loaded from <clone_ref>.txt if not given
+    clone_ref: eval/recordings/clone_ref_en.wav   # record with: uv run python scripts/record_clone_ref.py
+    clone_ref_text: null                           # null = auto-load from sidecar <clone_ref>.txt
+    speed: 0.4              # <1.0 = slower, more deliberate guru pacing
+    nfe_step: 16             # diffusion steps: 32=default quality, 16=2x faster, 8=gritty
+    remove_silence: false    # true can cause text repetition on chunk boundaries
 
 # Recognition + advance thresholds (Phase 4).
 thresholds:

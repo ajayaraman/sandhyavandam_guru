@@ -192,6 +192,53 @@ def test_openvoice_synthesize_produces_real_audio_in_user_timbre(pcm_recorder) -
     assert stats["rms"] > 500, f"OpenVoice PCM looks silent: {stats}"
 
 
+def test_openvoice_india_clone_picks_correct_speaker_and_embedding(pcm_recorder) -> None:
+    """Specific to the EN_INDIA path that was silently mis-mapped before.
+
+    Regressions this catches:
+      - MeloTTS spk2id is an HParams object whose iteration crashes if treated
+        as a plain dict (caused TypeError on the fallback warning).
+      - EN India is keyed 'EN_INDIA' (underscore) in MeloTTS but the embedding
+        file is 'en-india.pth' (dash) on HF. Earlier code converted one into
+        the other and silently fell back to a different accent.
+      - openvoice.se_extractor pulls broken silero + faster-whisper deps; we
+        must use converter.extract_se directly.
+    """
+    try:
+        from sandhyavandanam_guru.audio.tts_openvoice import OpenVoiceSpeaker
+    except ImportError:
+        pytest.skip("openvoice/melo not installed")
+
+    s = OpenVoiceSpeaker(ref_wav=_default_ref_wav(), language="EN_INDIA", device="cpu")
+    s._ensure_loaded()
+
+    # Speaker id resolved to the EN_INDIA key, not a fallback.
+    spk2id = dict(s._tts.hps.data.spk2id)  # type: ignore[union-attr]
+    assert "EN_INDIA" in spk2id, f"MeloTTS English keys changed: {list(spk2id)}"
+    assert s._speaker_id == spk2id["EN_INDIA"], (
+        f"selected speaker_id {s._speaker_id} doesn't match EN_INDIA={spk2id['EN_INDIA']}"
+    )
+
+    # Source embedding tensor came from base_speakers/ses/en-india.pth.
+    assert s._source_se is not None
+    # Target embedding (user's timbre) came from the reference clip.
+    assert s._target_se is not None
+    # They differ — proof the clone is actually overlaying the user's timbre,
+    # not echoing the base voice through identity.
+    import torch
+
+    assert not torch.equal(
+        s._source_se.detach().cpu(), s._target_se.detach().cpu()
+    ), "target and source embeddings are identical — clone isn't doing anything"
+
+    # And the end-to-end synth actually produces audio with the cloned voice.
+    pcm, sr = s.synthesize("Begin by sitting and facing east.")
+    stats = _amplitude_stats(pcm)
+    assert sr >= 16000
+    assert stats["len"] > sr
+    assert stats["rms"] > 500
+
+
 def test_openvoice_state_transitions_through_loading_then_speaking(pcm_recorder) -> None:
     """state() reports loading during warmup and speaking during playback."""
     try:

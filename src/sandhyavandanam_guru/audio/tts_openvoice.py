@@ -112,7 +112,6 @@ class OpenVoiceSpeaker:
             import torch  # type: ignore[import-not-found]
 
             from melo.api import TTS as MeloTTS  # type: ignore[import-not-found]
-            from openvoice import se_extractor  # type: ignore[import-not-found]
             from openvoice.api import ToneColorConverter  # type: ignore[import-not-found]
 
             cache = _ensure_checkpoints()
@@ -122,16 +121,36 @@ class OpenVoiceSpeaker:
 
             _log.info("loading MeloTTS English on %s", self.device)
             tts = MeloTTS(language="EN", device=self.device)
-            spk_ids = tts.hps.data.spk2id
-            wanted = self.language.replace("_", "-").upper()  # "EN-INDIA"
+            # MeloTTS exposes spk2id as an HParams object, not a plain dict.
+            # Iterating it raw goes through __getitem__ with int indices and
+            # throws TypeError. Materialise to a real dict first.
+            spk2id_raw = tts.hps.data.spk2id
+            try:
+                spk2id = dict(spk2id_raw)
+            except (TypeError, ValueError):
+                # Last-resort: read the underlying __dict__ that HParams wraps.
+                spk2id = {k: v for k, v in getattr(spk2id_raw, "__dict__", {}).items()
+                          if not k.startswith("_")}
+            # MeloTTS is inconsistent: EN_INDIA uses an underscore while EN-US /
+            # EN-BR / EN-AU / EN-Default all use dashes. Match by trying both.
+            cand = self.language.upper()
+            candidates = {cand, cand.replace("_", "-"), cand.replace("-", "_")}
             speaker_id = None
-            for k, v in spk_ids.items():
-                if k.upper() == wanted:
+            for k, v in spk2id.items():
+                if str(k).upper() in candidates:
                     speaker_id = v
                     break
+            wanted = "/".join(sorted(candidates))
             if speaker_id is None:
-                speaker_id = next(iter(spk_ids.values()))
-                _log.warning("speaker %s not found; falling back to %s", wanted, list(spk_ids)[0])
+                # Pull a safe key as fallback; never use list(HParams).
+                fallback_key = next(iter(spk2id)) if spk2id else None
+                speaker_id = spk2id[fallback_key] if fallback_key is not None else 0
+                _log.warning(
+                    "speaker %s not in %s; using %s",
+                    wanted,
+                    sorted(str(k) for k in spk2id),
+                    fallback_key,
+                )
 
             base_key = self.language.lower().replace("_", "-")  # "en-india"
             source_se = torch.load(
@@ -139,8 +158,13 @@ class OpenVoiceSpeaker:
                 map_location=self.device,
             )
 
-            # Extract the user's timbre fingerprint from the reference clip.
-            target_se, _ = se_extractor.get_se(self.ref_wav, converter, vad=True)
+            # Extract the user's timbre fingerprint directly from the reference
+            # clip via the converter's extract_se. This skips openvoice.se_extractor,
+            # which tries to VAD-split + ASR-align the audio and pulls in
+            # whisper-timestamped + silero + faster-whisper — every one of those
+            # has dep conflicts in our env. Our eval clips are already 8–12 s of
+            # clean speech, so we don't need any of that splitting.
+            target_se = converter.extract_se([self.ref_wav])
 
             self._converter = converter
             self._tts = tts

@@ -110,6 +110,19 @@ def step_unidic() -> None:
         raise SystemExit("unidic download failed")
 
 
+def step_nltk_data() -> None:
+    """MeloTTS' English G2P relies on NLTK corpora; download once."""
+    print("[3.5/4] NLTK corpora (cmudict + averaged_perceptron_tagger_eng + punkt)")
+    try:
+        import nltk  # type: ignore[import-not-found]
+    except ImportError:
+        print("  ✗ nltk not installed; skipping (it ships with melotts).")
+        return
+    for name in ("averaged_perceptron_tagger_eng", "cmudict", "punkt"):
+        nltk.download(name, quiet=True)
+        print(f"  ✓ {name}")
+
+
 def step_melotts() -> None:
     print("[4/4] MeloTTS English model (downloads on first init from HF)")
     try:
@@ -133,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     step_openvoice_checkpoints()
     if not args.skip_unidic:
         step_unidic()
+    step_nltk_data()
     if not args.skip_melo:
         step_melotts()
     print(f"\nDone in {time.time() - t0:.1f}s. You can now run `uv run sgr --voice openvoice` warm.")

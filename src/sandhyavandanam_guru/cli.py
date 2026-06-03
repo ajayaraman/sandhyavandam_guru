@@ -23,6 +23,35 @@ def _print_dry_run(ritual_path: str) -> int:
     return 0
 
 
+def _print_logs(lines: int = 50) -> int:
+    """Print the location of the TTS log and tail the last N lines."""
+    log_path = config.USER_DATA_DIR / "tts.log"
+    print(f"TTS log: {log_path}")
+    if not log_path.exists():
+        print("(no log yet — run `sgr` first)")
+        return 0
+    print(f"--- last {lines} lines ---")
+    try:
+        text = log_path.read_text()
+    except OSError as e:
+        print(f"(could not read log: {e})")
+        return 1
+    tail = text.splitlines()[-lines:]
+    print("\n".join(tail) if tail else "(empty)")
+    return 0
+
+
+def _clear_logs() -> int:
+    """Truncate the TTS log to zero bytes."""
+    log_path = config.USER_DATA_DIR / "tts.log"
+    if log_path.exists():
+        log_path.write_text("")
+        print(f"cleared {log_path}")
+    else:
+        print(f"no log at {log_path}")
+    return 0
+
+
 def _resolve_clone_ref(explicit_rel: str | None) -> Path:
     """Resolve the OpenVoice reference clip path.
 
@@ -81,7 +110,22 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--clone-ref", default=None, help="Override tts.openvoice.clone_ref.")
     p.add_argument("--no-audio", action="store_true", help="Disable TTS — silent study-aid mode.")
     p.add_argument("--dry-run", action="store_true", help="List steps and exit (no TUI).")
+    p.add_argument(
+        "--logs",
+        action="store_true",
+        help="Print the TTS log path and tail the last 50 lines.",
+    )
+    p.add_argument(
+        "--clear-logs",
+        action="store_true",
+        help="Truncate the TTS log to empty.",
+    )
     args = p.parse_args(argv)
+
+    if args.clear_logs:
+        return _clear_logs()
+    if args.logs:
+        return _print_logs()
 
     extra_path = Path(args.config) if args.config else None
     settings = load_settings(extra_path)

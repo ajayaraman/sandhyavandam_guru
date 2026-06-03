@@ -10,6 +10,7 @@ recitation captures the same vocal-tract fingerprint as an English clip would.
 from __future__ import annotations
 
 import logging
+import os
 import tempfile
 import threading
 import urllib.request
@@ -18,6 +19,15 @@ from typing import TYPE_CHECKING
 
 from .. import config as _cfg
 from .player import Player
+
+# OpenVoice's converter loads wavmark via huggingface_hub, which uses tqdm with
+# multiprocessing locks. Spawning a resource tracker from a daemon thread (which
+# is exactly where TUI-driven say() runs) crashes with "bad value(s) in
+# fds_to_keep". These env knobs tell tqdm/HF to use no locks and no progress
+# bars, which sidesteps the entire problem. Must be set before any HF call.
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+os.environ.setdefault("TQDM_DISABLE", "1")
+os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 
 if TYPE_CHECKING:
     import numpy as np

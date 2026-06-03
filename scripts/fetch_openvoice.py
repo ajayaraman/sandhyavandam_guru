@@ -57,11 +57,30 @@ class _Reporter:
         sys.stdout.flush()
 
 
+def step_wavmark() -> None:
+    """Pre-cache the wavmark watermarking model that OpenVoice loads at startup.
+
+    Why: ToneColorConverter.__init__ calls wavmark.load_model() which fires
+    hf_hub_download(); tqdm inside hub uses multiprocessing locks which crash
+    when the call originates from a daemon thread. Caching it here means the
+    runtime call hits an already-downloaded file and never spawns anything.
+    """
+    print("[1/4] WavMark watermark model (used by OpenVoice converter)")
+    try:
+        import wavmark  # type: ignore[import-not-found]
+    except ImportError:
+        print("  ✗ wavmark not installed; skipping (it ships with openvoice).")
+        return
+    print("  loading wavmark.load_model() to populate the HF cache...")
+    wavmark.load_model()
+    print("  ✓ wavmark cached")
+
+
 def step_openvoice_checkpoints() -> Path:
     from sandhyavandanam_guru.audio import tts_openvoice as ov
 
     cache = ov._openvoice_cache_dir()
-    print(f"[1/3] OpenVoice checkpoints → {cache}")
+    print(f"[2/4] OpenVoice checkpoints → {cache}")
     for rel in ov.OV_FILES:
         dst = cache / rel
         if dst.exists():
@@ -74,7 +93,7 @@ def step_openvoice_checkpoints() -> Path:
 
 
 def step_unidic() -> None:
-    print("[2/3] UniDic dictionary (one-time, ~500 MB)")
+    print("[3/4] UniDic dictionary (one-time, ~500 MB)")
     try:
         import unidic  # type: ignore[import-not-found]
     except ImportError:
@@ -92,7 +111,7 @@ def step_unidic() -> None:
 
 
 def step_melotts() -> None:
-    print("[3/3] MeloTTS English model (downloads on first init from HF)")
+    print("[4/4] MeloTTS English model (downloads on first init from HF)")
     try:
         from melo.api import TTS as MeloTTS  # type: ignore[import-not-found]
     except ImportError:
@@ -110,6 +129,7 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
 
     t0 = time.time()
+    step_wavmark()
     step_openvoice_checkpoints()
     if not args.skip_unidic:
         step_unidic()
